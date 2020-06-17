@@ -89,7 +89,7 @@ genome.head()
 # In[14]:
 
 
-user_tags = st.multiselect('Show tags', df['tag'].unique())
+user_tags = st.multiselect('Show tags', genome['tag'].unique())
 # Filter dataframe
 df = genome[genome['tag'].isin(user_tags)].sort_values(by ='relevance', ascending=False).head(20)
 dataset = pd.merge(left=df, right=movies, left_on='movieId', right_on='movieId')
