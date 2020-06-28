@@ -60,7 +60,7 @@ movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_
 
 # copy so that doesn't cause cacheing error 
 df = df_orig.copy()
-df_dummies = df_dummies_orig.copy()
+#df_dummies = df_dummies_orig.copy()
 
 
 # # Main Function: Navigation between Pages
@@ -69,7 +69,7 @@ df_dummies = df_dummies_orig.copy()
 # In[ ]:
 
 
-PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalized Recommendations']
+PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations']
 
 
 # In[12]:
