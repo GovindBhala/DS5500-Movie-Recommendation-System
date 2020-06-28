@@ -32,6 +32,7 @@ from sklearn.metrics.pairwise import linear_kernel
 import pages.home_page
 import pages.non_user_recommendations
 import pages.item_item_rec_app
+#import pages.personalized_rec_app
 
 
 # ## Run cached set up functions
@@ -39,15 +40,27 @@ import pages.item_item_rec_app
 # In[ ]:
 
 
-df_toprated, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = pages.non_user_recommendations.cached_functions()
+df_orig, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = pages.non_user_recommendations.cached_functions()
 
 
 # In[ ]:
 
 
-df_itemitem_orig, movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions()
+movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions()
+
+
+# In[ ]:
+
+
+#df_dummies_orig, ratings, ids_lst = pages.personalized_rec_app.load_data()
+
+
+# In[ ]:
+
+
 # copy so that doesn't cause cacheing error 
-df_itemitem = df_itemitem_orig.copy()
+df = df_orig.copy()
+df_dummies = df_dummies_orig.copy()
 
 
 # # Main Function: Navigation between Pages
@@ -56,7 +69,7 @@ df_itemitem = df_itemitem_orig.copy()
 # In[ ]:
 
 
-PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations']
+PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalized Recommendations']
 
 
 # In[12]:
@@ -70,10 +83,13 @@ def main():
     if selection == 'Home':
         pages.home_page.write()
     if selection == 'Top Rated Movies':
-        pages.non_user_recommendations.write(df_toprated, genres_unique, actors_df, 
+        pages.non_user_recommendations.write(df, genres_unique, actors_df, 
                                              directors_df, countries_unique, language_unique, tags_unique)
     if selection == 'Movie Based Recommendations':
-        pages.item_item_rec_app.write(df_itemitem, movieIds, indices, tfidf_matrix, movies_unique)
+        pages.item_item_rec_app.write(df, movieIds, indices, tfidf_matrix, movies_unique)
+    #if selection == 'Personalized Recommendations':
+    #    pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
+    #                                      language_unique, tags_unique, ids_lst, ratings, df_dummies)
 
 
 # In[ ]:
