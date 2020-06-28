@@ -53,7 +53,7 @@ def cached_functions():
     # get unique list of movies for user input 
     movies_unique = unique_lists(df)
     
-    return df, movieIds, indices, tfidf_matrix, movies_unique
+    return movieIds, indices, tfidf_matrix, movies_unique
 
 
 # ## Recommend movies based on cosine similarity of genre tf-idf
@@ -140,7 +140,7 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
                 recs = recs.head(10)
 
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
-                                              'title_downcased', 'title_year', 'genre_str', 'sim', 'score']))
+                                              'title_downcased', 'title_year', 'sim', 'score']))
 
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
