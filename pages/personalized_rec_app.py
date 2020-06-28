@@ -1,0 +1,201 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # TO DO:
+# - Document
+# - Put filtering stuff into a function that can be shared between here and non_user_recommendations 
+# - Memory issue: can't produce recommendations in streamlit app
+#     - Once get rated movies with ratings > 0 after normalization, remove movies that have no attributes in common with any of them? That's probably going to be none of them......shoot
+#         - Remove movies that have negatively associated attributes? 
+#     - In the main app file, remove repetitive data loads within the pages. Load data once in main file and feed into the cached functions
+
+# In[1]:
+
+
+import pandas as pd
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime as datetime
+import operator
+import scipy.spatial.distance as distance
+from sklearn import metrics 
+import random
+import time
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import fastparquet
+import streamlit as st
+
+
+# In[2]:
+
+
+@st.cache(allow_output_mutation=True)
+def load_data():
+    df = pd.read_parquet('processed_df.parq')
+    ratings = pd.read_parquet('ratings_sample.parq')
+    ratings = ratings.reset_index()
+
+    # get list of user Ids
+    ids_lst = ratings.userId.unique()
+        
+    return df, ratings, ids_lst
+
+
+# In[3]:
+
+
+@st.cache(allow_output_mutation=True)
+def user_content_recommendations(user_id, df, df_display, ratings):   
+    """
+    ratings_user: limit to one user
+    
+    movies_user: movies rated by that user
+    
+    watched: keep track of movies already watched
+    
+    normalize ratings: subtract mean rating  from ratings
+                       if rating < mean, normalized rating will be negative. Which is worse than 0 aka not rating movie at all.
+    
+    profile:create user profile: multiply item profile by user ratings --> sum of ratings for each attribute 
+    
+    recommendations: cosine similarity between movie and user profile 
+                     merge to get title
+                     sort
+                     remove recommendations already watched
+    """
+
+    ratings_user = ratings[ratings.userId == user_id]
+    movies_user = df[df.movieId.isin(ratings_user.movieId.unique())]
+    watched = movies_user.movieId.unique()
+    movies_user = movies_user.drop(columns = ['movieId', 'title_eng', 'year'])
+    
+    mean_rating = np.mean(ratings_user.rating)
+    ratings_user.rating = ratings_user.rating - mean_rating
+
+    profile = movies_user.T.dot(ratings_user.rating.values)
+    
+    movies = df.drop(columns = ['movieId', 'title_eng', 'year'])
+   
+    recommendations = metrics.pairwise.cosine_similarity(movies, np.asmatrix(profile.values))
+    recommendations = pd.DataFrame(recommendations)
+    recommendations.columns = ['prediction']
+    recommendations = pd.merge(recommendations, df_display, 
+                               left_index = True, right_index = True, how = 'left')
+    #recommendations = recommendations.sort_values('prediction', ascending = False)
+    recommendations = recommendations[~recommendations.movieId.isin(watched)]
+    #recommen_ratings = pd.merge(recommendations,movies_raitings)
+    return recommendations
+
+
+# In[ ]:
+
+
+def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
+          language_unique, tags_unique, ids_lst, ratings, df):
+    
+    st.title('Personalized Movie Recommendations')
+    st.write('Press Display Recommendations with no inputs to view your top recommendations.' + 
+             'Or select filters to see your top recommended movies in those categories.')
+    
+    userId = st.text_input('Enter your User ID:')
+    
+    if userId == '':
+        st.write('Cannot provide recommendations without an ID')
+    else:
+        userId = int(userId)
+        
+    if userId not in ids_lst:
+        st.write('Not a valid ID')
+    else:
+        # generate recommendations
+        recommendation = user_content_recommendations(userId, df, df_display, ratings)
+        # limit to recommendations similarity > 0 
+            # don't recommend movies that are similar to movies they dislike
+        recommendation = recommendation[recommendation.prediction > 0]
+        
+        ## filtering 
+        # get user inputs: multiple selection possible per category
+        genre_input = st.multiselect('Select genre(s)', genres_unique)
+        country_input = st.multiselect('Select filming country(s)', countries_unique)
+        language_input = st.multiselect('Select language(s)', language_unique)
+        tag_input = st.multiselect('Select genome tags(s)', tags_unique)
+
+        # actors, directors get text inputs
+        # Dropdowns too much for streamlit to handle
+        # allow multiple entires
+        actor_input = st.text_input('Type actor(s) names separated by comma. Select intended actor(s) from dropdown that appears')
+        if actor_input != '':
+            # downcase input
+            actor_input = actor_input.lower()
+            # split into list 
+            actor_input = actor_input.split(', ')
+
+            # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
+            # works for misspellings as well 
+            # limit to 70% similarity 
+            options = []
+            for i in actor_input:
+                actors_df['sim'] = actors_df.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
+                options.append(actors_df[actors_df.sim > 70].sort_values('sim', ascending = False).head(3).actors_upcased.unique())
+            options = [item for sublist in options for item in sublist]    
+
+            # list actors that are similar to what they typed
+            if len(options) > 0:
+                actor_input = st.multiselect('Select Actor(s)', options)
+            else:
+                st.write("Sorry, we can't find any matching actors")
+
+        else:
+            actor_input = []
+
+        director_input = st.text_input('Type director(s) names separated by comma. Select intended director(s) from dropdown that appears')
+        if director_input != '':
+            # downcase input
+            director_input = director_input.lower()
+            # split into list 
+            director_input = director_input.split(', ')
+
+            # fuzzy string matching to find similarity ratio between user input and actual directors (downcased)
+            # works for misspellings as well 
+            # limit to 70% similarity 
+            options = []
+            for i in director_input:
+                directors_df['sim'] = directors_df.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
+                options.append(directors_df[directors_df.sim > 70].sort_values('sim', ascending = False).head(3).directors_upcased.unique())
+            options = [item for sublist in options for item in sublist]    
+
+            # list actors that are similar to what they typed
+            if len(options) > 0:
+                director_input = st.multiselect('Select Director(s)', options)
+            else:
+                st.write("Sorry, we can't find any matching directors")
+
+        else:
+            director_input = []
+
+        # display recommendations once hit button
+        if st.button('Display Recommendations'):
+            # filter dataframe
+            df_filtered = recommendation[(recommendation.Genres.map(set(genre_input).issubset)) & 
+                                     (recommendation['Filming Countries'].map(set(country_input).issubset)) &
+                                     (recommendation['Language(s)'].map(set(language_input).issubset)) & 
+                                     (recommendation.Tags.map(set(tag_input).issubset))  & 
+                                     (recommendation['Actors'].map(set(actor_input).issubset)) &
+                                     (recommendation['Director(s)'].map(set(director_input).issubset))
+                                    ].sort_values('prediction', ascending = False).head(10).drop(columns = ['weighted_avg',
+                                                                                                            'actors_downcased', 
+                                                                                                            'directors_downcased',
+                                                                                                            'title_downcased', 
+                                                                                                            'title_year', 
+                                                                                                            'movieId',
+                                                                                                           'prediction',
+                                                                                                            'genre_str'])
+            # if no valid movies with combination of filters, notify. Else display dataframe
+            if len(df_filtered) > 0:
+                st.write(df_filtered)
+            else:
+                st.write('Found no recommended movies that match your selections')
+
