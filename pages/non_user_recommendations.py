@@ -53,6 +53,7 @@ def cat_list_expand(df, var):
 # In[42]:
 
 
+@st.cache(allow_output_mutation=True)
 def unique_lists(df):
     
     # unique lists. Sort alphabetically
@@ -76,25 +77,6 @@ def unique_lists(df):
     
     
     return genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
-
-
-# # Run above functions w. cacheing
-# These functions will not change when user inputs to filtering change, so only run first time app is opened     
-# st.cache not compatabile with jupyter notebook. Comment out when running in jupyter. 
-
-# In[43]:
-
-
-@st.cache(allow_output_mutation=True)
-def cached_functions():
-    
-    # read in data created in recommendation_data_display.ipynb
-    df = pd.read_parquet('recommendation_display.parq')
-
-    # get unique lists of all filter values
-    genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = unique_lists(df)
-    
-    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
 
 
 # ## Display in Streamlit with filter options
@@ -210,7 +192,9 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                                                                          'actors_downcased', 
                                                                                                           'directors_downcased',
                                                                                                          'title_downcased', 
-                                                                                                         'title_year', 'movieId'])
+                                                                                                         'title_year', 
+                                                                                                          'movieId',
+                                                                                                         'genre_str'])
         # if no valid movies with combination of filters, notify. Else display dataframe
         if len(df_filtered) > 0:
             st.write(df_filtered)

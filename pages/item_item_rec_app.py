@@ -35,14 +35,8 @@ def unique_lists(df):
 
 
 @st.cache(allow_output_mutation=True)
-def cached_functions():
-    
-    # read in data created in recommendation_data_display.ipynb
-    df = pd.read_parquet('recommendation_display.parq')
-    
-    # recombine genre lists to string for tf-idf
-    df['genre_str'] = df.Genres.apply(lambda row: ' '.join(row))
-    
+def cached_functions(df):
+
     # set up tf-idf and indices
     tf = TfidfVectorizer(analyzer='word',ngram_range=(1, 2),min_df=0, stop_words='english')
     tfidf_matrix = tf.fit_transform(df['genre_str'])
@@ -140,7 +134,7 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
                 recs = recs.head(10)
 
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
-                                              'title_downcased', 'title_year', 'sim', 'score']))
+                                              'title_downcased', 'title_year', 'sim', 'score', 'genre_str']))
 
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
