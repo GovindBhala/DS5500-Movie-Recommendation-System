@@ -71,7 +71,7 @@ def unique_lists(df):
     actors_df.columns = ['actors_downcased', 'actors_upcased']
 
     directors_df = pd.merge(cat_list_expand(df, 'directors_downcased').directors_downcased,
-                         cat_list_expand(df, 'Director(s)')['Director(s)'], left_index = True, right_index = True)
+                            cat_list_expand(df, 'Director(s)')['Director(s)'], left_index = True, right_index = True)
     directors_df = directors_df[directors_df.duplicated() == False]    
     directors_df.columns = ['directors_downcased', 'directors_upcased']
     
@@ -140,9 +140,11 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         # works for misspellings as well 
         # limit to 70% similarity 
         options = []
+        actors_sim = actors_df.copy()
         for i in actor_input:
-            actors_df['sim'] = actors_df.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
-            options.append(actors_df[actors_df.sim > 70].sort_values('sim', ascending = False).head(3).actors_upcased.unique())
+            actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
+            options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
+                                                                      ).head(3).actors_upcased.unique())
         options = [item for sublist in options for item in sublist]    
 
         # list actors that are similar to what they typed
@@ -165,9 +167,11 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         # works for misspellings as well 
         # limit to 70% similarity 
         options = []
+        directors_sim = directors_df.copy()
         for i in director_input:
-            directors_df['sim'] = directors_df.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
-            options.append(directors_df[directors_df.sim > 70].sort_values('sim', ascending = False).head(3).directors_upcased.unique())
+            directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
+            options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
+                                                                            ).head(3).directors_upcased.unique())
         options = [item for sublist in options for item in sublist]    
 
         # list actors that are similar to what they typed

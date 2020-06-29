@@ -7,7 +7,12 @@
 # - Item-Item recommendations
 # - Personalized recommendations
 # - User profile creation: provide ratings
-# - Visualizations
+# - Visualizations   
+#   
+#   
+# Memory issue with personalized: 
+# - Need to copy dataframes after load to prevent cached functions from running again
+# - But they take up too much space to have two copies
 
 # In[1]:
 
@@ -55,7 +60,7 @@ def data_setup():
     return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
 
 
-# In[4]:
+# In[8]:
 
 
 df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = data_setup()

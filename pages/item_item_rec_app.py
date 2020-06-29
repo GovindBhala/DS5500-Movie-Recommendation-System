@@ -119,8 +119,9 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
         # fuzzy string matching to find similarity ratio between user input and actual movie title (downcased)
         # works for misspellings as well 
         # limit to 70% similarity 
-        df['sim'] = df.title_downcased.apply(lambda row: fuzz.ratio(row, user_text))
-        options = df[df.sim > 70].sort_values('sim', ascending = False).head(10).title_year.unique()
+        options = df.copy()
+        options['sim'] = options.title_downcased.apply(lambda row: fuzz.ratio(row, user_text))
+        options = options[options.sim > 70].sort_values('sim', ascending = False).head(10).title_year.unique()
 
         # find movies that start with what they typed
         if len(options) > 0:
@@ -134,7 +135,7 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
                 recs = recs.head(10)
 
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
-                                              'title_downcased', 'title_year', 'sim', 'score', 'genre_str']))
+                                              'title_downcased', 'title_year', 'score', 'genre_str']))
 
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
