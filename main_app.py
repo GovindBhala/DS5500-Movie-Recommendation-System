@@ -38,6 +38,7 @@ import pages.home_page
 import pages.non_user_recommendations
 import pages.item_item_rec_app
 import pages.personalized_rec_app
+import pages.profile_add_app
 
 
 # ## Set up data and unique lists for filtering 
@@ -60,7 +61,7 @@ def data_setup():
     return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
 
 
-# In[8]:
+# In[1]:
 
 
 df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = data_setup()
@@ -94,7 +95,7 @@ df_dummies, ratings, ids_lst = pages.personalized_rec_app.load_data()
 # In[ ]:
 
 
-PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalized Recommendations']
+PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalized Recommendations', 'Add Profile']
 
 
 # In[12]:
@@ -115,6 +116,8 @@ def main():
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
                                           language_unique, tags_unique, ids_lst, ratings, df_dummies)
+    if selection == 'Add Profile':
+        pages.profile_add_app.write(df)
 
 
 # In[ ]:
