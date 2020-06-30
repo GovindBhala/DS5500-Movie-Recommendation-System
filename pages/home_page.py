@@ -17,5 +17,7 @@ def write():
     Options:
     - Top Rated Movies: apply filters to find the top rated movies in your desired attributes
     - Movie Based Recommendations: enter a movie you have previously enjoyed to view similar movies
+    - Personalized Recommendations: enter your user ID to find your personalized top movies + apply filters
+    - Add Profile: manually enter movie ratings if you are not in our system, thereby creating a profile to enable personalized recommendations
     """)
 
