@@ -8,11 +8,6 @@
 # - Personalized recommendations
 # - User profile creation: provide ratings
 # - Visualizations   
-#   
-#   
-# Memory issue with personalized: 
-# - Need to copy dataframes after load to prevent cached functions from running again
-# - But they take up too much space to have two copies
 
 # In[1]:
 
@@ -78,15 +73,7 @@ movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_
 # In[ ]:
 
 
-df_dummies, ratings, ids_lst = pages.personalized_rec_app.load_data()
-
-
-# In[ ]:
-
-
-# copy so that doesn't cause cacheing error 
-#df = df_orig.copy()
-#df_dummies = df_dummies_orig.copy()
+df_dummies, ratings_lst, user_lst, movies_lst = pages.personalized_rec_app.load_data()
 
 
 # # Main Function: Navigation between Pages
@@ -101,7 +88,8 @@ PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalize
 # In[12]:
 
 
-def main():
+def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique,
+         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_lst, user_lst, movies_lst):
     
     st.sidebar.title("Navigation")
     selection = st.sidebar.radio("Go to", PAGES)    
@@ -115,13 +103,20 @@ def main():
         pages.item_item_rec_app.write(df, movieIds, indices, tfidf_matrix, movies_unique)
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
-                                          language_unique, tags_unique, ids_lst, ratings, df_dummies)
+                                          language_unique, tags_unique, ratings_lst, user_lst, movies_lst, df_dummies)
     if selection == 'Add Profile':
-        pages.profile_add_app.write(df)
+        #st.write(ratings.userId.max())
+        ratings_lst, user_lst, movies_lst = pages.profile_add_app.write(df, ratings_lst, user_lst, movies_lst)
+        #st.write(ratings.userId.max())
+        
+    return ratings_lst, user_lst, movies_lst
 
 
 # In[ ]:
 
 
-main()
+ratings_lst, user_lst, movies_lst = main(df, genres_unique, actors_df, directors_df, countries_unique,
+                                         language_unique, tags_unique,
+                                         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, 
+                                         ratings_lst, user_lst, movies_lst)
 
