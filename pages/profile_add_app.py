@@ -5,7 +5,11 @@
 # - Persistant across session: if come back to page later (without clearing cache), will be on the same profile
 # - NOT saved for next session
 # - Add to LISTS instead of dataframes because mutable: persistant across sessions 
-#     - Thus can enter ID created in personalization page to get recommendations
+#     - Thus can enter ID created in personalization page to get recommendations    
+#       
+# __Questions:__
+# - Give option to make a new profile? Not sure how to do this     
+# - Save so persitant between sessions?
 
 # In[1]:
 
@@ -87,12 +91,12 @@ def write(df, ratings_lst, user_lst, movies_lst):
                     # find ID of movie they selected
                     user_movieid = int(df[df.title_year == user_title].movieId.values[0])
 
-                    # add to persistant lists
+                    # add to persistant lists for this profile
                     ids.append(user_movieid)
                     ratings.append(user_rating)
                     title.append(user_title)
                     
-                    # add to overall lists
+                    # add to overall lists: use in personalized recs
                     ratings_lst.append(user_rating)
                     user_lst.append(userId_new[0])
                     movies_lst.append(user_movieid)
@@ -105,7 +109,7 @@ def write(df, ratings_lst, user_lst, movies_lst):
     # view your profile 
     if st.button('View Profile'):
         # create dataframe from lists and display entered profile
-        d = {'movieId':ids, 'title':title, 'rating':ratings}
+        d = {'movieId':ids, 'title':title, 'rating':[str(round(i, 1)) for i in ratings]}
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
