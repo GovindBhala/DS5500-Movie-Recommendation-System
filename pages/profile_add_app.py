@@ -26,27 +26,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
 
-# In[ ]:
-
-
-# function creates empty lists, but allow output mutation such that not overwritten when page refreshes
-# only works with mutable data types
-@st.cache(allow_output_mutation=True)
-def list_create():
-    return [], [], [], []
-
-
 # In[19]:
 
 
-def write(df, ratings_lst, user_lst, movies_lst):
-    
-    # empty lists to hold user input: will persist across user refresh because of function
-    ids, ratings, title, userId_new = list_create()    
-
-    # generate a new user id 
-    # append to list because changes every time the page is run. Only want first max entry. 
-    userId_new.append(int(np.max(user_lst) + 1))
+def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
     
     st.title('Create a New User Profile')
     st.write('(1) Type the title of a movie you have watched')
@@ -92,14 +75,15 @@ def write(df, ratings_lst, user_lst, movies_lst):
                     user_movieid = int(df[df.title_year == user_title].movieId.values[0])
 
                     # add to persistant lists for this profile
-                    ids.append(user_movieid)
-                    ratings.append(user_rating)
-                    title.append(user_title)
+                    new_movies.append(user_movieid)
+                    new_ratings.append(user_rating)
+                    new_titles.append(user_title)
+                    new_users.append(userId_new[0])
                     
                     # add to overall lists: use in personalized recs
-                    ratings_lst.append(user_rating)
-                    user_lst.append(userId_new[0])
-                    movies_lst.append(user_movieid)
+                    #ratings_lst.append(user_rating)
+                    #user_lst.append(userId_new[0])
+                    #movies_lst.append(user_movieid)
                 
                     
         # if nothing > 70% similiarity, then can't find a matching movie
@@ -109,10 +93,14 @@ def write(df, ratings_lst, user_lst, movies_lst):
     # view your profile 
     if st.button('View Profile'):
         # create dataframe from lists and display entered profile
-        d = {'movieId':ids, 'title':title, 'rating':[str(round(i, 1)) for i in ratings]}
+        d = {'movieId':new_movies, 'title':new_titles, 'rating':[str(round(i, 1)) for i in new_ratings]}
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
+        
+        st.write(new_movies)
+        st.write(new_ratings)
+        st.write(new_users)
                   
             
             
@@ -135,5 +123,5 @@ def write(df, ratings_lst, user_lst, movies_lst):
         #st.write('Done! Please enter your ID number in the Personalized Recommendations page')    
         
     # return so can be used in this current run
-    return ratings_lst, user_lst, movies_lst
+    return new_ratings, new_users, new_movies, new_titles
 
