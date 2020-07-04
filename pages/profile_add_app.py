@@ -35,7 +35,8 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
     st.write('(1) Type the title of a movie you have watched')
     st.write('(2) Select a title from the dropdown of potentially matching movies in our system')
     st.write('(3) Provide a rating from 0.5-5.0 (higher better)')
-    st.write('(4) Click **Submit** to submit this rating. Repeat as many times as desired')
+    st.write('(4) Click **Submit** to submit this rating. Repeat as many times as desired.                \n ' +
+            'In order for us to generate recommendations, you must rate *at least two* movies.')
     st.write('(5) Click **View Profile** to view your profile')
     st.write('Enter your user ID on the Personalized Recommendation pages. Feel free to return and add more movies later.')
     st.write('')
@@ -91,10 +92,6 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
-        
-        st.write(new_movies)
-        st.write(new_ratings)
-           
             
         # print generated userId for user to use in personalized recs
         #userId_new = ratings_df.userId.max() + 1 # generate a new user id 
