@@ -44,9 +44,7 @@ def load_data():
 
 @st.cache(allow_output_mutation = True)
 def create_ratings_df(new_ratings, new_users, new_movies, ratings):
-    
-    st.write('create ratings')
-        
+            
     # create dataframe from lists of newly added from profile dadd
     d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
     new_ratings = pd.DataFrame(d)
@@ -85,8 +83,6 @@ def user_content_recommendations(user_id, df, df_display, ratings):
                      remove recommendations already watched
     """
     
-    st.write('generating recommendations')
-
     ratings_user = ratings[ratings.userId == user_id]
     movies_user = df[df.movieId.isin(ratings_user.movieId.unique())]
     watched = movies_user.movieId.unique()

@@ -80,12 +80,6 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
                     new_titles.append(user_title)
                     new_users.append(userId_new[0])
                     
-                    # add to overall lists: use in personalized recs
-                    #ratings_lst.append(user_rating)
-                    #user_lst.append(userId_new[0])
-                    #movies_lst.append(user_movieid)
-                
-                    
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
             st.write("Sorry, we can't find any matching movies")
@@ -97,12 +91,7 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
-        
-        st.write(new_movies)
-        st.write(new_ratings)
-        st.write(new_users)
-                  
-            
+           
             
         # print generated userId for user to use in personalized recs
         #userId_new = ratings_df.userId.max() + 1 # generate a new user id 
