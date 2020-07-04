@@ -3,16 +3,7 @@
 
 # # Generate Recommendations for Non-Users & Streamlit
 
-# 1. Top rated movies within a filter: weighted average of # of reviews and average ratings - DONE
-#     - Genomes: only display if above X threshold? Or add relevance score into the weighted average?
-# 
-# UI elements to do:
-# - Biographic information for the actor, director (IMDB) (?)
-# 
-# UI in the future: 
-# - Filtering within personalized recommendations (user ID field)
-# - Tab allowing users to input own ratings and get a recommendation out
-# - EDA
+# Top rated movies within a filter: weighted average of # of reviews and average ratings
 
 # #### To Run:
 # 1. Convert notebook to py file
@@ -116,10 +107,11 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
           language_unique, tags_unique):
     
     st.title('Top Rated Movie Recommendations')
-    st.header('Enter desired filters and select "Display Recommendations" \n')
+    st.header('View the top rated movies with your desired attributes')
+    st.write('Enter filters and select **Display Recommendations** \n' + 
+             'If you wish to see overall top rated movies, select **Display Recommendations** without any filters')
     st.write('Please note filters use AND logic')
-    st.write('If you wish to see overall top rated movies, select Display Recommendations without any filters')
-    
+
     # get user inputs: multiple selection possible per category
     genre_input = st.multiselect('Select genre(s)', genres_unique)
     country_input = st.multiselect('Select filming country(s)', countries_unique)
@@ -129,7 +121,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     # actors, directors get text inputs
     # Dropdowns too much for streamlit to handle
     # allow multiple entires
-    actor_input = st.text_input('Type actor(s) names separated by comma. Select intended actor(s) from dropdown that appears')
+    actor_input = st.text_input('Type actor(s) names separated by commas. Select intended actor(s) from dropdown that appears')
     if actor_input != '':
         # downcase input
         actor_input = actor_input.lower()
@@ -156,7 +148,8 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     else:
         actor_input = []
 
-    director_input = st.text_input('Type director(s) names separated by comma. Select intended director(s) from dropdown that appears')
+    director_input = st.text_input('Type director(s) names separated by commas. ' + 
+                                   'Select intended director(s) from dropdown that appears')
     if director_input != '':
         # downcase input
         director_input = director_input.lower()

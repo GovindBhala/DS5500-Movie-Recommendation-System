@@ -102,9 +102,9 @@ def recommend_movies(df, selected_id, movieIds, indices, tfidf_matrix):
 def write(df, movieIds, indices, tfidf_matrix, movies_unique):
 
     st.title('Similar Movie Recommendations')
-    st.header('View movies similar to movies you have enjoyed in the past')
-    st.write('Type a movie title press Enter. You will see a list of potentially matching movies in our system. ' + 
-             'Select your choice and hit "Display Recommendations" to see similar movies.')
+    st.header('View movies similar to movies that you have enjoyed in the past')
+    st.write('Type a movie title hit Enter. You will see a list of potentially matching movies in our system.      \n' + 
+             'Select your choice and select **Display Recommendations** to see similar movies.')
     
     # get user input text
     # too many movies for a full drop down 

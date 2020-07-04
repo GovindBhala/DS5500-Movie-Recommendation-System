@@ -119,7 +119,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
           language_unique, tags_unique, ratings_lst, user_lst, movies_lst, df):
     
     st.title('Personalized Movie Recommendations')
-    st.write('Press Display Recommendations with no inputs to view your top recommendations. ' + 
+    st.write('Select **Display Recommendations** with no inputs to view your top recommendations. \n' + 
              'Or select filters to see your top recommended movies in those categories.')
     
     ratings = create_ratings_df(ratings_lst, user_lst, movies_lst)

@@ -48,8 +48,8 @@ def write(df, ratings_lst, user_lst, movies_lst):
     # append to list because changes every time the page is run. Only want first max entry. 
     userId_new.append(int(np.max(user_lst) + 1))
     
-    st.title('Create a Ratings Profile')
-    st.write('(1) Type the name of a movie you have watched')
+    st.title('Create a New User Profile')
+    st.write('(1) Type the title of a movie you have watched')
     st.write('(2) Select a title from the dropdown of potentially matching movies in our system')
     st.write('(3) Provide a rating from 0.5-5.0 (higher better)')
     st.write('(4) Click **Submit** to submit this rating. Repeat as many times as desired')
