@@ -34,6 +34,7 @@ import pages.non_user_recommendations
 import pages.item_item_rec_app
 import pages.personalized_rec_app
 import pages.profile_add_app
+import pages.EDA_Streamlit_page
 
 
 # ## Set up data and unique lists for filtering 
@@ -53,27 +54,53 @@ def data_setup():
     # get unique lists of all filter values
     genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = pages.non_user_recommendations.unique_lists(df)
     
-    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
+    # data for item-item recommendations
+    movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions(df)
+    
+    # data for personalized recommendations
+    df_dummies, ratings_df = pages.personalized_rec_app.load_data()
+    
+    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df
 
 
 # In[1]:
 
 
-df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = data_setup()
+df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df = data_setup()
 
 
-# ## Run cached set up functions
-
-# In[ ]:
-
-
-movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions(df)
-
+# ## Set up Empty New User Profile
 
 # In[ ]:
 
 
-df_dummies, ratings_lst, user_lst, movies_lst = pages.personalized_rec_app.load_data()
+# function creates empty lists, but allow output mutation such that not overwritten when page refreshes
+# only works with mutable data types
+@st.cache(allow_output_mutation=True)
+def list_create():
+    return [], [], [], [], []
+
+
+# In[ ]:
+
+
+@st.cache(allow_output_mutation=True)
+def empty_profile_create(ratings_df):
+
+    # empty lists to hold user input: will persist across user refresh because of function
+    new_ratings, new_users, new_movies, new_titles, userId_new = list_create()    
+
+    # generate a new user id 
+    # append to list because changes every time the page is run. Only want first max entry. 
+    userId_new.append(int(ratings_df.userId.max() + 1))
+    
+    return new_ratings, new_users, new_movies, new_titles, userId_new
+
+
+# In[ ]:
+
+
+new_ratings, new_users, new_movies, new_titles, userId_new = empty_profile_create(ratings_df)
 
 
 # # Main Function: Navigation between Pages
@@ -82,20 +109,24 @@ df_dummies, ratings_lst, user_lst, movies_lst = pages.personalized_rec_app.load_
 # In[ ]:
 
 
-PAGES = ['Home', 'Top Rated Movies', 'Movie Based Recommendations', 'Personalized Recommendations', 'Add Profile']
+PAGES = ['Home', 'Top Movie Visualizations', 'Top Rated Movies', 'Movie Based Recommendations',
+         'Personalized Recommendations', 'Add Profile']
 
 
 # In[12]:
 
 
 def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique,
-         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_lst, user_lst, movies_lst):
+         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
+         new_ratings, new_users, new_movies, new_titles, userId_new):
     
     st.sidebar.title("Navigation")
     selection = st.sidebar.radio("Go to", PAGES)    
     
     if selection == 'Home':
         pages.home_page.write()
+    if selection == 'Top Movie Visualizations':
+        pages.EDA_Streamlit_page.write()
     if selection == 'Top Rated Movies':
         pages.non_user_recommendations.write(df, genres_unique, actors_df, 
                                              directors_df, countries_unique, language_unique, tags_unique)
@@ -103,20 +134,20 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
         pages.item_item_rec_app.write(df, movieIds, indices, tfidf_matrix, movies_unique)
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
-                                          language_unique, tags_unique, ratings_lst, user_lst, movies_lst, df_dummies)
+                                         language_unique, tags_unique, new_ratings, new_users, new_movies, df_dummies,
+                                         ratings_df)
     if selection == 'Add Profile':
-        #st.write(ratings.userId.max())
-        ratings_lst, user_lst, movies_lst = pages.profile_add_app.write(df, ratings_lst, user_lst, movies_lst)
-        #st.write(ratings.userId.max())
+        new_ratings, new_users, new_movies, new_titles = pages.profile_add_app.write(df, new_ratings, new_users,
+                                                                                     new_movies, new_titles, userId_new)
         
-    return ratings_lst, user_lst, movies_lst
+    return new_ratings, new_users, new_movies, new_titles
 
 
 # In[ ]:
 
 
-ratings_lst, user_lst, movies_lst = main(df, genres_unique, actors_df, directors_df, countries_unique,
-                                         language_unique, tags_unique,
-                                         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, 
-                                         ratings_lst, user_lst, movies_lst)
+new_ratings, new_users, new_movies, new_titles = main(df, genres_unique, actors_df, directors_df, countries_unique,
+                                                      language_unique, tags_unique,
+                                                      movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
+                                                      new_ratings, new_users, new_movies, new_titles, userId_new)
 
