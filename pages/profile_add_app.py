@@ -91,6 +91,9 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
+        
+        st.write(new_movies)
+        st.write(new_ratings)
            
             
         # print generated userId for user to use in personalized recs

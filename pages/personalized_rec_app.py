@@ -3,7 +3,7 @@
 
 # # Display Personalized Recommendations based on User ID and Filters
 
-# In[2]:
+# In[1]:
 
 
 import pandas as pd
@@ -24,7 +24,7 @@ import streamlit as st
 from fuzzywuzzy import fuzz
 
 
-# In[3]:
+# In[2]:
 
 
 @st.cache(allow_output_mutation=True)
@@ -39,23 +39,24 @@ def load_data():
     return df, ratings
 
 
-# In[5]:
+# In[13]:
 
 
 @st.cache(allow_output_mutation = True)
 def create_ratings_df(new_ratings, new_users, new_movies, ratings):
             
-    # create dataframe from lists of newly added from profile dadd
+    # create dataframe from lists of newly added from profile add
     d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
     new_ratings = pd.DataFrame(d)
     
     # sometimes duplicate movies from user profile adds - average ratings. Else matrix multiplication won't work
-    new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()   
+    new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
+    new_ratings = new_ratings.reset_index(drop = False)
     
     # concat with original ratings
-    ratings = pd.concat([ratings, new_ratings])
-    ratings = ratings.reset_index(drop = False)
-    
+    ratings = pd.concat([ratings, new_ratings], sort = False)
+    ratings = ratings.reset_index(drop = True)
+
     return ratings
 
 
@@ -82,7 +83,7 @@ def user_content_recommendations(user_id, df, df_display, ratings):
                      sort
                      remove recommendations already watched
     """
-    
+        
     ratings_user = ratings[ratings.userId == user_id]
     movies_user = df[df.movieId.isin(ratings_user.movieId.unique())]
     watched = movies_user.movieId.unique()
@@ -121,7 +122,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
              'Or select filters to see your top recommended movies in those categories.')
     
     ratings = create_ratings_df(new_ratings, new_users, new_movies, ratings)
-    
+
     userId = st.text_input('Enter your User ID:')
     
     
@@ -131,7 +132,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         userId_int = int(userId)
             
         # check valid ID
-        if userId_int not in set(ratings.userId.unique()) and userId_int not in set(new_users):
+        if userId_int not in set(ratings.userId.unique()):
             st.write('Not a valid ID')
         else:
             # generate recommendations
