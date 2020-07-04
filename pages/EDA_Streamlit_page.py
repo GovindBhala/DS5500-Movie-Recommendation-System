@@ -34,8 +34,15 @@ def write():
 
     st.write("\n")
     st.write("\n")
+    
 
-
+    if st.checkbox('Genres Frequency'):
+        image_file = 'Frequency_Genres'
+        suffix='.png'
+        img_file =os.path.join(directory_name, image_file + suffix)
+        image = Image.open(img_file)
+        st.image(image, use_column_width=True)
+    
     if st.checkbox('Top 10 Genre Combinations'):
         image_file = 'Top 10 Genre Combinations'
         suffix='.png'
@@ -70,6 +77,13 @@ def write():
         img_file =os.path.join(directory_name, image_file + suffix)
         image = Image.open(img_file)
         st.image(image, use_column_width=True)
+        
+    if st.checkbox('Genres by Average Rating'):
+        image_file = 'Genres by Average Rating'
+        suffix='.png'
+        img_file =os.path.join(directory_name, image_file + suffix)
+        image = Image.open(img_file)
+        st.image(image, use_column_width=True)
 
     if st.checkbox('Top 10 Highly Rated Actors -  Minimum 100 Ratings'):
         image_file = 'Top 10 Highly Rated Actors - Minimum 100 Ratings'
@@ -99,27 +113,12 @@ def write():
         image = Image.open(img_file)
         st.image(image, use_column_width=True)
 
-    if st.checkbox('Genres Frequency'):
-        image_file = 'Frequency_Genres'
-        suffix='.png'
-        img_file =os.path.join(directory_name, image_file + suffix)
-        image = Image.open(img_file)
-        st.image(image, use_column_width=True)
-
-    if st.checkbox('Genres by Average Rating'):
-        image_file = 'Genres by Average Rating'
-        suffix='.png'
-        img_file =os.path.join(directory_name, image_file + suffix)
-        image = Image.open(img_file)
-        st.image(image, use_column_width=True)
-
     if st.checkbox('Distribution of Ratings'):
         image_file = 'Distribution of Ratings'
         suffix='.png'
         img_file =os.path.join(directory_name, image_file + suffix)
         image = Image.open(img_file)
         st.image(image, use_column_width=True)
-
 
     if st.checkbox('Number of Ratings (millions)'):
         image_file = 'Number of Ratings (millions)'
