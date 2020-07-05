@@ -128,99 +128,104 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     if userId == '':
         st.write('Cannot provide recommendations without an ID')
     else:
-        userId_int = int(userId)
-            
-        # check valid ID
-        if userId_int not in set(ratings.userId.unique()):
+        try:
+            userId_int = int(userId)
+        # if cannot convert to an integer 
+        except ValueError:
             st.write('Not a valid ID')
-        else:
-            # generate recommendations
-            recommendation = user_content_recommendations(userId_int, df, df_display, ratings)
-    
-            ## filtering 
-            # get user inputs: multiple selection possible per category
-            genre_input = st.multiselect('Select genre(s)', genres_unique)
-            country_input = st.multiselect('Select filming country(s)', countries_unique)
-            language_input = st.multiselect('Select language(s)', language_unique)
-            tag_input = st.multiselect('Select genome tags(s)', tags_unique)
-
-            # actors, directors get text inputs
-            # Dropdowns too much for streamlit to handle
-            # allow multiple entires
-            actor_input = st.text_input('Type actor(s) names separated by comma. Select intended actor(s) from dropdown that appears')
-            if actor_input != '':
-                # downcase input
-                actor_input = actor_input.lower()
-                # split into list 
-                actor_input = actor_input.split(', ')
-
-                # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
-                # works for misspellings as well 
-                # limit to 70% similarity 
-                options = []
-                actors_sim = actors_df.copy()
-                for i in actor_input:
-                    actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
-                    options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                              ).head(3).actors_upcased.unique())
-                options = [item for sublist in options for item in sublist]    
-
-                # list actors that are similar to what they typed
-                if len(options) > 0:
-                    actor_input = st.multiselect('Select Actor(s)', options)
-                else:
-                    st.write("Sorry, we can't find any matching actors")
-
+        # if valid integer, check if valid ID
+        else: 
+            # check valid ID
+            if userId_int not in set(ratings.userId.unique()):
+                st.write('Not a valid ID')
+            # valid ID so give recommendations 
             else:
-                actor_input = []
+                # generate recommendations
+                recommendation = user_content_recommendations(userId_int, df, df_display, ratings)
 
-            director_input = st.text_input('Type director(s) names separated by comma. Select intended director(s) from dropdown that appears')
-            if director_input != '':
-                # downcase input
-                director_input = director_input.lower()
-                # split into list 
-                director_input = director_input.split(', ')
+                ## filtering 
+                # get user inputs: multiple selection possible per category
+                genre_input = st.multiselect('Select genre(s)', genres_unique)
+                country_input = st.multiselect('Select filming country(s)', countries_unique)
+                language_input = st.multiselect('Select language(s)', language_unique)
+                tag_input = st.multiselect('Select genome tags(s)', tags_unique)
 
-                # fuzzy string matching to find similarity ratio between user input and actual directors (downcased)
-                # works for misspellings as well 
-                # limit to 70% similarity 
-                options = []
-                directors_sim = directors_df.copy()
-                for i in director_input:
-                    directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
-                    options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                                    ).head(3).directors_upcased.unique())
-                options = [item for sublist in options for item in sublist]    
+                # actors, directors get text inputs
+                # Dropdowns too much for streamlit to handle
+                # allow multiple entires
+                actor_input = st.text_input('Type actor(s) names separated by comma. ' + 
+                                            'Select intended actor(s) from dropdown that appears')
+                if actor_input != '':
+                    # downcase input
+                    actor_input = actor_input.lower()
+                    # split into list 
+                    actor_input = actor_input.split(', ')
 
-                # list actors that are similar to what they typed
-                if len(options) > 0:
-                    director_input = st.multiselect('Select Director(s)', options)
+                    # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
+                    # works for misspellings as well 
+                    # limit to 70% similarity 
+                    options = []
+                    actors_sim = actors_df.copy()
+                    for i in actor_input:
+                        actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
+                        options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
+                                                                                  ).head(3).actors_upcased.unique())
+                    options = [item for sublist in options for item in sublist]    
+
+                    # list actors that are similar to what they typed
+                    if len(options) > 0:
+                        actor_input = st.multiselect('Select Actor(s)', options)
+                    else:
+                        st.write("Sorry, we can't find any matching actors")
+
                 else:
-                    st.write("Sorry, we can't find any matching directors")
+                    actor_input = []
 
-            else:
-                director_input = []
+                director_input = st.text_input('Type director(s) names separated by comma. ' + 
+                                               'Select intended director(s) from dropdown that appears')
+                if director_input != '':
+                    # downcase input
+                    director_input = director_input.lower()
+                    # split into list 
+                    director_input = director_input.split(', ')
 
-            # display recommendations once hit button
-            if st.button('Display Recommendations'):
-                # filter dataframe
-                df_filtered = recommendation[(recommendation.Genres.map(set(genre_input).issubset)) & 
-                                         (recommendation['Filming Countries'].map(set(country_input).issubset)) &
-                                         (recommendation['Language(s)'].map(set(language_input).issubset)) & 
-                                         (recommendation.Tags.map(set(tag_input).issubset))  & 
-                                         (recommendation['Actors'].map(set(actor_input).issubset)) &
-                                         (recommendation['Director(s)'].map(set(director_input).issubset))
-                                        ].sort_values('prediction', ascending = False).head(10).drop(columns = ['weighted_avg',
-                                                                                                                'actors_downcased', 
-                                                                                                                'directors_downcased',
-                                                                                                                'title_downcased', 
-                                                                                                                'title_year', 
-                                                                                                                'movieId',
-                                                                                                               'prediction',
-                                                                                                                'genre_str'])
-                # if no valid movies with combination of filters, notify. Else display dataframe
-                if len(df_filtered) > 0:
-                    st.write(df_filtered)
+                    # fuzzy string matching to find similarity ratio between user input and actual directors (downcased)
+                    # works for misspellings as well 
+                    # limit to 70% similarity 
+                    options = []
+                    directors_sim = directors_df.copy()
+                    for i in director_input:
+                        directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
+                        options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
+                                                                                        ).head(3).directors_upcased.unique())
+                    options = [item for sublist in options for item in sublist]    
+
+                    # list actors that are similar to what they typed
+                    if len(options) > 0:
+                        director_input = st.multiselect('Select Director(s)', options)
+                    else:
+                        st.write("Sorry, we can't find any matching directors")
+
                 else:
-                    st.write('Found no recommended movies that match your selections')
+                    director_input = []
+
+                # display recommendations once hit button
+                if st.button('Display Recommendations'):
+                    # filter dataframe
+                    df_filtered = recommendation[(recommendation.Genres.map(set(genre_input).issubset)) & 
+                                             (recommendation['Filming Countries'].map(set(country_input).issubset)) &
+                                             (recommendation['Language(s)'].map(set(language_input).issubset)) & 
+                                             (recommendation.Tags.map(set(tag_input).issubset))  & 
+                                             (recommendation['Actors'].map(set(actor_input).issubset)) &
+                                             (recommendation['Director(s)'].map(set(director_input).issubset))
+                                            ].sort_values('prediction', ascending = False
+                                                         ).head(10).drop(columns = ['weighted_avg', 'actors_downcased', 
+                                                                                    'directors_downcased', 'title_downcased', 
+                                                                                    'title_year', 'movieId', 'prediction',
+                                                                                    'genre_str'])
+                    # if no valid movies with combination of filters, notify. Else display dataframe
+                    if len(df_filtered) > 0:
+                        st.write(df_filtered)
+                    else:
+                        st.write('Found no recommended movies that match your selections')
 
