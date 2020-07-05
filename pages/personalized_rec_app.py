@@ -1,7 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Display Personalized Recommendations based on User ID and Filters
+# # Generate & Display Personalized Recommendations
+# **Use Case**: User with existing profile OR generated one on Add Profile page
+# - Input: User ID 
+# - Generate recommendations based on content-system: cosine similarity between user and movie profile. 
+# - Allow filtering of recommendations based on desired movie attributes. 
+#     - Do not display recommendations with cosine similarity < 0 
+# 
+# *Challenges*: very slow process to generate recommendations because of matrix multiplication.  
+# Cannot pre generate similarity profiles because already running into memory limitations.   
+#     
+# Process:
+# - Combine ratings data with any newly created profiles
+# - User enters ID
+# - Check if valid ID 
+# - Generate recommendations
+# - Allow user to filter down recommendations 
+# - Display recommendations 
 
 # In[1]:
 
@@ -24,6 +40,9 @@ import streamlit as st
 from fuzzywuzzy import fuzz
 
 
+# ## Load Data (cached)
+# Called in main app 
+
 # In[2]:
 
 
@@ -38,6 +57,8 @@ def load_data():
     return df, ratings
 
 
+# ## Combine ratings data with new profile created 
+
 # In[6]:
 
 
@@ -48,7 +69,7 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
     d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
     new_ratings = pd.DataFrame(d)
     
-    # sometimes duplicate movies from user profile adds - average ratings. Else matrix multiplication won't work
+    # sometimes duplicate movies from user profile adds -> average ratings. Else matrix multiplication won't work
     new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
     new_ratings = new_ratings.reset_index(drop = False)
     
@@ -58,6 +79,14 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 
     return ratings
 
+
+# ## Generate Recommendations 
+# - Limit to specified user
+# - Normalize ratings for specific user. If rating < mean, normalized ratings will be negative 
+# - Create use profile: sum of ratings for each attribute
+# - Generate recommendations: cosine similarity between movie and user profile 
+# - Remove movies already watched/rated
+# - Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
 
 # In[3]:
 
@@ -110,41 +139,50 @@ def user_content_recommendations(user_id, df, df_display, ratings):
     return recommendations
 
 
+# ## Streamlit App
+# 
+
 # In[ ]:
 
 
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
           language_unique, tags_unique, decades_unique, new_ratings, new_users, new_movies, df, ratings):
     
+    # user instructions 
     st.title('Personalized Movie Recommendations')
     st.write('Select **Display Recommendations** with no inputs to view your top recommendations. \n' + 
              'Or select filters to see your top recommended movies in those categories.')
     
+    # combine original ratings with newly created profiles
     ratings = create_ratings_df(new_ratings, new_users, new_movies, ratings)
 
+    # user enter their user ID
     userId = st.text_input('Enter your User ID:')
-    
     
     if userId == '':
         st.write('Cannot provide recommendations without an ID')
     else:
+        # check if valid integer. If yes, convert
         try:
             userId_int = int(userId)
         # if cannot convert to an integer 
         except ValueError:
             st.write('Not a valid ID')
+            
         # if valid integer, check if valid ID
         else: 
+            
             # check valid ID
             if userId_int not in set(ratings.userId.unique()):
                 st.write('Not a valid ID')
-            # valid ID so give recommendations 
+                
+            # if valid ID, give recommendations 
             else:
                 # generate recommendations
                 recommendation = user_content_recommendations(userId_int, df, df_display, ratings)
 
                 ## filtering 
-                # get user inputs: multiple selection possible per category
+                # get user inputs: multiple selection possible per category except decade
                 genre_input = st.multiselect('Select genre(s)', genres_unique)
                 decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique))
                 country_input = st.multiselect('Select filming country(s)', countries_unique)
@@ -201,7 +239,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                                                         ).head(3).directors_upcased.unique())
                     options = [item for sublist in options for item in sublist]    
 
-                    # list actors that are similar to what they typed
+                    # list directors that are similar to what they typed
                     if len(options) > 0:
                         director_input = st.multiselect('Select Director(s)', options)
                     else:
@@ -212,7 +250,8 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
 
                 # display recommendations once hit button
                 if st.button('Display Recommendations'):
-
+                    
+                    # for decade, only filter if chose an option (no NA default for selectbox)
                     if decade_input != 'Choose an option':
                         df_filtered = df_display[(df_display.decade ==  decade_input)]
                     else:

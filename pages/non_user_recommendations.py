@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Generate Recommendations for Non-Users & Streamlit
-
-# Top rated movies within a filter: weighted average of # of reviews and average ratings
-
-# #### To Run:
-# 1. Convert notebook to py file
-#     - Run in command line: py -m jupyter nbconvert --to script streamlit_example.ipynb
-# 2. Run streamlit app
-#     - Run in command line: streamlit run streamlit_example.py
+# # Non-Personalized recommendations based on (filtered) top rated movies
+# **Use case**: users without a profile can input desired movie attributes and view the top rated movies in those categories.  
+# Sort on weighted average: # of reviews * average rating 
+# 
+# Process: 
+# - Allow users to choose multiple selections from filters using AND logic 
+#     - For directors and actors, allow them to enter free text and display the top 3 most similar values in dataset for them to choose between 
+# - Once hit view recommendations, display sorted movies in the chosen categories
 
 # In[1]:
 
@@ -26,6 +25,7 @@ from fuzzywuzzy import fuzz
 
 
 # ## Get Unique Lists of Filter Options
+# Options for users to choose from. Called in data prep section of main app
 
 # In[2]:
 
@@ -89,6 +89,7 @@ def unique_lists(df):
 #    
 # Filter by:
 # - Genres
+# - Decade of release
 # - Actors
 # - Directors
 # - Country
@@ -97,9 +98,6 @@ def unique_lists(df):
 # 
 # Default table is highest rated movies without filters    
 #    
-#    
-# Extensions:
-# - AND/OR advanced search option? This might be difficult
 
 # In[2]:
 
@@ -107,13 +105,14 @@ def unique_lists(df):
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
           language_unique, tags_unique, decades_unique):
     
+    # user instructions 
     st.title('Top Rated Movie Recommendations')
     st.header('View the top rated movies with your desired attributes')
     st.write('Enter filters and select **Display Recommendations** \n' + 
              'If you wish to see overall top rated movies, select **Display Recommendations** without any filters')
     st.write('Please note filters use AND logic')
     
-    # get user inputs: multiple selection possible per category
+    # get user inputs: multiple selection possible per category except decade
     genre_input = st.multiselect('Select genre(s)', genres_unique)
     decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique))
     country_input = st.multiselect('Select filming country(s)', countries_unique)
@@ -121,8 +120,8 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     tag_input = st.multiselect('Select genome tags(s)', tags_unique)
     
     # actors, directors get text inputs
-    # Dropdowns too much for streamlit to handle
-    # allow multiple entires
+    # Dropdowns too many values for streamlit to handle
+    # allow multiple entries with a commoa 
     actor_input = st.text_input('Type actor(s) names separated by commas. Select intended actor(s) from dropdown that appears')
     if actor_input != '':
         # downcase input
@@ -169,7 +168,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                                             ).head(3).directors_upcased.unique())
         options = [item for sublist in options for item in sublist]    
 
-        # list actors that are similar to what they typed
+        # list directors that are similar to what they typed
         if len(options) > 0:
             director_input = st.multiselect('Select Director(s)', options)
         else:
@@ -181,11 +180,12 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     # display recommendations once hit button
     if st.button('Display Recommendations'):
         
+        # for decade, only filter if chose an option (no NA default for selectbox)
         if decade_input != 'Choose an option':
             df_filtered = df_display[(df_display.decade ==  decade_input)]
         else:
             df_filtered = df_display.copy()
-        # filter dataframe
+        # filter dataframe with rest of filters
         df_filtered = df_filtered[(df_filtered.Genres.map(set(genre_input).issubset)) & 
                                  (df_filtered['Filming Countries'].map(set(country_input).issubset)) &
                                  (df_filtered['Language(s)'].map(set(language_input).issubset)) & 

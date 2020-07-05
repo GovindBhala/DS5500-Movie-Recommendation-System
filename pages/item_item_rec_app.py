@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Item-Item Recommendations for Non-Users & Streamlit
+# # Item-Item Recommendations for Non-Users (Similar Movies)
+# **Use Case**: User without a profile can get recommendations based on a movie they have previously enjoyed by displaying similar movies.    
+# Details:
 # - Allow users to put in a movie that they liked and output similar movies     
 # - For a first pass, use a simple tf-idf genre-based recommendation model. Will update with movie profiles from personalized recommendations     
 # - If same similarity score (aka same genres), recommend highest rated based on weighted average 
 #     - Generally want diverse recommendations, expose long tail HOWEVER these people are already non-users who are not rating movies, thus want to give credibility to draw them in and get them to watch anything 
 #     - Nothing to based the diverse recommendations on other than randomness. 
+#     
+# Process:
+# - Create TF-IDF matrix based on genres
+# - User enters free form text for movie title. Find 10 most similar title (at least 70% similar) and user chooses from dropdown 
+# - Find 10 most similar movies. Secondarily sorted on weighted average. Display
 
 # In[2]:
 
@@ -22,14 +29,8 @@ from fuzzywuzzy import fuzz
 
 
 # # Cached Setup
-
-# In[333]:
-
-
-def unique_lists(df):
-    movies_unique = np.sort(df.title_year.unique())
-    return movies_unique
-
+# Called in main funciton     
+# Set up TF-IDF matrix for genres and other needed data structures
 
 # In[335]:
 
@@ -45,7 +46,7 @@ def cached_functions(df):
     indices = pd.Series(df.index, index=df['movieId'])
     
     # get unique list of movies for user input 
-    movies_unique = unique_lists(df)
+    movies_unique = np.sort(df.title_year.unique())
     
     return movieIds, indices, tfidf_matrix, movies_unique
 
@@ -123,9 +124,10 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
         options['sim'] = options.title_downcased.apply(lambda row: fuzz.ratio(row, user_text))
         options = options[options.sim > 70].sort_values('sim', ascending = False).head(10).title_year.unique()
 
-        # find movies that start with what they typed
+        # find movies that are similar to what they typed 
         if len(options) > 0:
 
+            # select from dropdown 
             user_title = st.selectbox('Select Movie', options)
 
             if st.button('Display Recommendations'):

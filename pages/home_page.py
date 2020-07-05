@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# # Home Page For Streamlit App
+# List and describe each of the pages
+
 # In[ ]:
 
 

@@ -3,11 +3,28 @@
 
 # # Main Streamlit HomePage
 # 5 pages:
+# - Visualizations   
 # - Top rated movies with filtering 
 # - Item-Item recommendations
 # - Personalized recommendations
-# - User profile creation: provide ratings
-# - Visualizations   
+# - User profile creation: provide ratings    
+#    
+# Process:
+# 1. Import pages as modules
+# 2. Set up data with cached functions
+#     - Call data functions from the various page modules so that all loaded in once when the app initially loads thus decreasing wait time when switch between pages
+#     - Cached so that the data is not reloaded at every user selection 
+# 3. Create empty user profiles to be filled if the user creates a new profile
+#     - One profile per session to simulate a log in experience
+# 4. Create side navigation bar and call page module's write() function according to user selection 
+#     - If create a profile, return the updated objects 
+
+# #### To Run:
+# 1. Convert notebook to py file
+#     - Run in command line: py -m jupyter nbconvert --to script main_app.ipynb
+#     - Also convert all pages notebooks
+# 2. Run streamlit app
+#     - Run in command line: streamlit run main_app.py
 
 # In[1]:
 
@@ -48,10 +65,10 @@ def data_setup():
     # read in data created in recommendation_data_display.ipynb
     df = pd.read_parquet('recommendation_display.parq')
     
-    # recombine genre lists to string for tf-idf
+    # recombine genre lists to string for tf-idf for item-item recommendations 
     df['genre_str'] = df.Genres.apply(lambda row: ' '.join(row))
 
-    # get unique lists of all filter values
+    # get unique lists of all filter values for user selections 
     genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique = pages.non_user_recommendations.unique_lists(df)
     
     # data for item-item recommendations
@@ -70,11 +87,12 @@ df, genres_unique, actors_df, directors_df, countries_unique, language_unique, t
 
 
 # ## Set up Empty New User Profile
+# Mutable list objects so that preserved between runs of script
 
 # In[ ]:
 
 
-# function creates empty lists, but allow output mutation such that not overwritten when page refreshes
+# function creates empty lists, so not overwritten when page refreshes
 # only works with mutable data types
 @st.cache(allow_output_mutation=True)
 def list_create():
@@ -104,7 +122,7 @@ new_ratings, new_users, new_movies, new_titles, userId_new = empty_profile_creat
 
 
 # # Main Function: Navigation between Pages
-# - Side radio button. Upon selection, call write() function within each page. Pass in arguments from cached calls. 
+# Side radio button. Upon selection, call write() function within each page. Pass in arguments from cached calls. 
 
 # In[ ]:
 
