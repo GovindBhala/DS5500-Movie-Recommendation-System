@@ -2,17 +2,23 @@
 # coding: utf-8
 
 # # Create New Profile
+# **Use Case:** new user without existing profile. Enter movies and ratings so that they can receieve personalized recommendations 
+# Details:
 # - Persistant across session: if come back to page later (without clearing cache), will be on the same profile
-# - NOT saved for next session
+#     - Cannot create a new profile in 1 session. Makes sense because proxying a login experience. 
+# - Persistant between sessions: save data so when return to app later, can pull up an old profile. 
 # - Add to LISTS instead of dataframes because mutable: persistant across sessions 
 #     - Thus can enter ID created in personalization page to get recommendations    
-# - User must add at least 2 ratings, else will produce no recommendations in the recommendation tab 
-#     - Because of normalization - rating becomes 0 
-#     - Add error handling for this to the personalized page? Message if < 2 ratings? 
-#       
-# __Questions:__
-# - Give option to make a new profile? Not sure how to do this  --- no because this is like 1 login 
-# - Save so persitant between sessions? -- yes, try to do this 
+# - User must add at least 2 DISTINCT ratings, else will produce no recommendations in the recommendation tab 
+#     - Because of normalization - rating becomes 0 if only 1 distinct value (mean = self)
+#     
+# Process:
+# - User free text input movie title
+# - Look for movies in system with > 70% similarity. Display top 10
+# - User selects from dropdown
+# - User input rating and hit submit
+# - If hit view profile & save without 2 distinct ratings (at least 2 movies with 2 different ratings), ask to enter more. 
+# - Otherwise, display what they've entered + concat to ratings dataframe and save 
 
 # In[1]:
 
@@ -34,27 +40,30 @@ from sklearn.metrics.pairwise import linear_kernel
 
 def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, ratings):
     
+    # user instructions 
     st.title('Create a New User Profile')
     st.write('(1) Type the title of a movie you have watched')
     st.write('(2) Select a title from the dropdown of potentially matching movies in our system')
-    st.write('(3) Provide a rating from 0.5-5.0 (higher better)')
+    st.write('(3) Provide a rating from 0.5-5.0 stars (higher better)')
     st.write('(4) Click **Submit** to submit this rating. Repeat as many times as desired.                \n ' +
-            'In order for us to generate recommendations, you must rate *at least two* movies.')
+            'In order for us to generate recommendations, you must rate *at least two* movies ' + 
+             'with *at least two* different star values.')
     st.write('(5) Click **View & Save Profile** to view your profile and save it for next time. ' + 
              'Please wait for the save to complete.')
     st.write('Enter your user ID on the Personalized Recommendation pages. Feel free to return and add more movies later.')
     st.write('')
     st.write('**Your User ID is: ' + str(userId_new[0]) + '**')
         
-    # get user input text - too many movies for a full drop down 
+    # get user input movie title, free text - too many movies for a full drop down 
     user_text = st.text_input("Enter a movie you have watched")
     # downcase input
     user_text = user_text.lower()
 
+    # if no entry:
     if user_text == '':
         st.write('Waiting for input')
+    # once enter text:
     else:
-
         # fuzzy string matching to find similarity ratio between user input and actual movie title (downcased)
         # works for misspellings as well 
         # limit to 70% similarity 
@@ -65,6 +74,7 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
         # find movies with titles similar to what they typed
         if len(options) > 0:
 
+            # user select out of possible options
             user_title = st.selectbox('Select Movie', ['<select>'] + list(options))
 
             # once input something, ask for rating
@@ -76,7 +86,7 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
                 # once hit submit, add to lists
                 if st.button('Submit'):
 
-                    # find ID of movie they selected
+                    # find ID of movie they selected based on year title 
                     user_movieid = int(df[df.title_year == user_title].movieId.values[0])
 
                     # add to persistant lists for this profile
@@ -85,41 +95,42 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
                     new_titles.append(user_title)
                     new_users.append(userId_new[0])
                     
-                    # add to overall ratings df and save 
-                     #d = {'movieId':ids, 'rating':ratings, 'timestamp': [None]*len(ids), 'userId': [userId_new]*len(ids)}
-                    #ratings_df = pd.concat([ratings_df, pd.DataFrame(d)])
-                    
-        # if nothing > 70% similiarity, then can't find a matching movie
+        # if nothing with > 70% similiarity, then can't find a matching movie
         else:
             st.write("Sorry, we can't find any matching movies")
             
-    # view your profile 
+    # view your profile and save 
     if st.button('View & Save Profile'):
-        # create dataframe from lists and display entered profile
-        d = {'movieId':new_movies, 'title':new_titles, 'rating':[str(round(i, 1)) for i in new_ratings]}
-        profile = pd.DataFrame(d)
-        st.write('Here is your profile')
-        st.write(profile)
         
-        # create dataframe from lists of newly added from profile add
-        d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
-        new_ratings = pd.DataFrame(d)
+        # if they've entered fewer than 2 distinct ratings, notify and do not save profile yet
+        if len(set(new_ratings)) < 2:
+            st.write("You haven't entered enough ratings! Please rate at least two movies with at least two different star values")
+        else:
+            # create dataframe from lists for profile display
+            d = {'movieId':new_movies, 'title':new_titles, 'rating':[str(round(i, 1)) for i in new_ratings]}
+            profile = pd.DataFrame(d)
+            st.write('Here is your profile')
+            st.write(profile)
 
-        # sometimes duplicate movies from user profile adds - average ratings. Else matrix multiplication won't work
-        new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
-        new_ratings = new_ratings.reset_index(drop = False)
+            # create dataframe from lists for ratings profile save 
+            d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
+            new_ratings = pd.DataFrame(d)
 
-        # in case saved/viewed profile previously, delete instances of this ID before so don't create duplicates
-        ratings = ratings[ratings.userId != userId_new[0]]
-        
-        # concat with original ratings
-        ratings = pd.concat([ratings, new_ratings], sort = False)
-        ratings = ratings.reset_index(drop = True)
-        
-        # save 
-        st.write('Saving your profile. Please wait...')
-        ratings.to_parquet('ratings_sample_useradd.parq', engine = 'fastparquet', compression = 'GZIP', index = False)
-        st.write('Done!')
+            # sometimes duplicate movies from user profile adds - average ratings. Else matrix multiplication won't work
+            new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
+            new_ratings = new_ratings.reset_index(drop = False)
+
+            # in case saved/viewed profile previously, delete instances of this ID before so don't create duplicates
+            ratings = ratings[ratings.userId != userId_new[0]]
+
+            # concat with original ratings
+            ratings = pd.concat([ratings, new_ratings], sort = False)
+            ratings = ratings.reset_index(drop = True)
+
+            # save 
+            st.write('Saving your profile. Please wait...')
+            ratings.to_parquet('ratings_sample_useradd.parq', engine = 'fastparquet', compression = 'GZIP', index = False)
+            st.write('Done!')
     
     # return so can be used in this current run
     return new_ratings, new_users, new_movies, new_titles
