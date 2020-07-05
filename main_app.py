@@ -138,7 +138,8 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
                                          ratings_df)
     if selection == 'Add Profile':
         new_ratings, new_users, new_movies, new_titles = pages.profile_add_app.write(df, new_ratings, new_users,
-                                                                                     new_movies, new_titles, userId_new)
+                                                                                     new_movies, new_titles, userId_new,
+                                                                                    ratings_df)
         
     return new_ratings, new_users, new_movies, new_titles
 

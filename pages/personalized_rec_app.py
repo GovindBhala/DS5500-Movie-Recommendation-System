@@ -3,7 +3,7 @@
 
 # # Display Personalized Recommendations based on User ID and Filters
 
-# In[1]:
+# In[9]:
 
 
 import pandas as pd
@@ -33,7 +33,6 @@ def load_data():
     df = pd.read_parquet('processed_df.parq')
     # version of ratings that has manually entered user profiles added on 
     ratings = pd.read_parquet('ratings_sample_useradd.parq')
-    ratings = ratings.drop(columns = ['index', 'timestamp'])
     ratings = ratings.reset_index(drop = True)
         
     return df, ratings
