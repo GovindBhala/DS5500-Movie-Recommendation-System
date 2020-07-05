@@ -52,7 +52,7 @@ def data_setup():
     df['genre_str'] = df.Genres.apply(lambda row: ' '.join(row))
 
     # get unique lists of all filter values
-    genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique = pages.non_user_recommendations.unique_lists(df)
+    genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique = pages.non_user_recommendations.unique_lists(df)
     
     # data for item-item recommendations
     movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions(df)
@@ -60,13 +60,13 @@ def data_setup():
     # data for personalized recommendations
     df_dummies, ratings_df = pages.personalized_rec_app.load_data()
     
-    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df
+    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df
 
 
 # In[1]:
 
 
-df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df = data_setup()
+df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df = data_setup()
 
 
 # ## Set up Empty New User Profile
@@ -116,7 +116,7 @@ PAGES = ['Home', 'Top Movie Visualizations', 'Top Rated Movies', 'Movie Based Re
 # In[12]:
 
 
-def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique,
+def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique,
          movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
          new_ratings, new_users, new_movies, new_titles, userId_new):
     
@@ -129,17 +129,17 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
         pages.EDA_Streamlit_page.write()
     if selection == 'Top Rated Movies':
         pages.non_user_recommendations.write(df, genres_unique, actors_df, 
-                                             directors_df, countries_unique, language_unique, tags_unique)
+                                             directors_df, countries_unique, language_unique, tags_unique, decades_unique)
     if selection == 'Movie Based Recommendations':
         pages.item_item_rec_app.write(df, movieIds, indices, tfidf_matrix, movies_unique)
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
-                                         language_unique, tags_unique, new_ratings, new_users, new_movies, df_dummies,
-                                         ratings_df)
+                                         language_unique, tags_unique, decades_unique,
+                                         new_ratings, new_users, new_movies, df_dummies, ratings_df)
     if selection == 'Add Profile':
         new_ratings, new_users, new_movies, new_titles = pages.profile_add_app.write(df, new_ratings, new_users,
                                                                                      new_movies, new_titles, userId_new,
-                                                                                    ratings_df)
+                                                                                     ratings_df)
         
     return new_ratings, new_users, new_movies, new_titles
 
@@ -148,7 +148,7 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
 
 
 new_ratings, new_users, new_movies, new_titles = main(df, genres_unique, actors_df, directors_df, countries_unique,
-                                                      language_unique, tags_unique,
+                                                      language_unique, tags_unique, decades_unique,
                                                       movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
                                                       new_ratings, new_users, new_movies, new_titles, userId_new)
 

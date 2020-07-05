@@ -3,7 +3,7 @@
 
 # # Display Personalized Recommendations based on User ID and Filters
 
-# In[9]:
+# In[1]:
 
 
 import pandas as pd
@@ -38,7 +38,7 @@ def load_data():
     return df, ratings
 
 
-# In[13]:
+# In[6]:
 
 
 @st.cache(allow_output_mutation = True)
@@ -114,7 +114,7 @@ def user_content_recommendations(user_id, df, df_display, ratings):
 
 
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
-          language_unique, tags_unique, new_ratings, new_users, new_movies, df, ratings):
+          language_unique, tags_unique, decades_unique, new_ratings, new_users, new_movies, df, ratings):
     
     st.title('Personalized Movie Recommendations')
     st.write('Select **Display Recommendations** with no inputs to view your top recommendations. \n' + 
@@ -146,6 +146,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                 ## filtering 
                 # get user inputs: multiple selection possible per category
                 genre_input = st.multiselect('Select genre(s)', genres_unique)
+                decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique))
                 country_input = st.multiselect('Select filming country(s)', countries_unique)
                 language_input = st.multiselect('Select language(s)', language_unique)
                 tag_input = st.multiselect('Select genome tags(s)', tags_unique)
@@ -211,18 +212,23 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
 
                 # display recommendations once hit button
                 if st.button('Display Recommendations'):
+
+                    if decade_input != 'Choose an option':
+                        df_filtered = df_display[(df_display.decade ==  decade_input)]
+                    else:
+                        df_filtered = df_display.copy()
                     # filter dataframe
-                    df_filtered = recommendation[(recommendation.Genres.map(set(genre_input).issubset)) & 
-                                             (recommendation['Filming Countries'].map(set(country_input).issubset)) &
-                                             (recommendation['Language(s)'].map(set(language_input).issubset)) & 
-                                             (recommendation.Tags.map(set(tag_input).issubset))  & 
-                                             (recommendation['Actors'].map(set(actor_input).issubset)) &
-                                             (recommendation['Director(s)'].map(set(director_input).issubset))
-                                            ].sort_values('prediction', ascending = False
-                                                         ).head(10).drop(columns = ['weighted_avg', 'actors_downcased', 
-                                                                                    'directors_downcased', 'title_downcased', 
-                                                                                    'title_year', 'movieId', 'prediction',
-                                                                                    'genre_str'])
+                    df_filtered = df_filtered[(df_filtered.Genres.map(set(genre_input).issubset)) & 
+                                             (df_filtered['Filming Countries'].map(set(country_input).issubset)) &
+                                             (df_filtered['Language(s)'].map(set(language_input).issubset)) & 
+                                             (df_filtered.Tags.map(set(tag_input).issubset))  & 
+                                             (df_filtered['Actors'].map(set(actor_input).issubset)) &
+                                             (df_filtered['Director(s)'].map(set(director_input).issubset)) 
+                                             ].sort_values('weighted_avg', ascending = False
+                                                          ).head(10).drop(columns = ['weighted_avg','actors_downcased', 
+                                                                                     'directors_downcased', 'title_downcased', 
+                                                                                     'title_year', 'movieId', 'genre_str',
+                                                                                     'decade'])
                     # if no valid movies with combination of filters, notify. Else display dataframe
                     if len(df_filtered) > 0:
                         st.write(df_filtered)

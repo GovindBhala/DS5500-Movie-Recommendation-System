@@ -52,6 +52,7 @@ def unique_lists(df):
     countries_unique  = np.sort(cat_list_expand(df, 'Filming Countries')['Filming Countries'].unique())
     language_unique = np.sort(cat_list_expand(df, 'Language(s)')['Language(s)'].unique())
     tags_unique = np.sort(cat_list_expand(df, 'Tags').Tags.unique())
+    decades_unique = np.sort(df.decade.unique())
     
     # actors and directors: user input fuzzy string matching.
     # Get version with lower case for user matching + upper case for display
@@ -67,7 +68,7 @@ def unique_lists(df):
     directors_df.columns = ['directors_downcased', 'directors_upcased']
     
     
-    return genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique
+    return genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique
 
 
 # ## Display in Streamlit with filter options
@@ -100,24 +101,25 @@ def unique_lists(df):
 # Extensions:
 # - AND/OR advanced search option? This might be difficult
 
-# In[ ]:
+# In[2]:
 
 
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
-          language_unique, tags_unique):
+          language_unique, tags_unique, decades_unique):
     
     st.title('Top Rated Movie Recommendations')
     st.header('View the top rated movies with your desired attributes')
     st.write('Enter filters and select **Display Recommendations** \n' + 
              'If you wish to see overall top rated movies, select **Display Recommendations** without any filters')
     st.write('Please note filters use AND logic')
-
+    
     # get user inputs: multiple selection possible per category
     genre_input = st.multiselect('Select genre(s)', genres_unique)
+    decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique))
     country_input = st.multiselect('Select filming country(s)', countries_unique)
     language_input = st.multiselect('Select language(s)', language_unique)
     tag_input = st.multiselect('Select genome tags(s)', tags_unique)
-
+    
     # actors, directors get text inputs
     # Dropdowns too much for streamlit to handle
     # allow multiple entires
@@ -178,20 +180,22 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
 
     # display recommendations once hit button
     if st.button('Display Recommendations'):
+        
+        if decade_input != 'Choose an option':
+            df_filtered = df_display[(df_display.decade ==  decade_input)]
+        else:
+            df_filtered = df_display.copy()
         # filter dataframe
-        df_filtered = df_display[(df_display.Genres.map(set(genre_input).issubset)) & 
-                                 (df_display['Filming Countries'].map(set(country_input).issubset)) &
-                                 (df_display['Language(s)'].map(set(language_input).issubset)) & 
-                                 (df_display.Tags.map(set(tag_input).issubset))  & 
-                                 (df_display['Actors'].map(set(actor_input).issubset)) &
-                                 (df_display['Director(s)'].map(set(director_input).issubset))
-                                ].sort_values('weighted_avg', ascending = False).head(10).drop(columns = ['weighted_avg',
-                                                                                                         'actors_downcased', 
-                                                                                                          'directors_downcased',
-                                                                                                         'title_downcased', 
-                                                                                                         'title_year', 
-                                                                                                          'movieId',
-                                                                                                         'genre_str'])
+        df_filtered = df_filtered[(df_filtered.Genres.map(set(genre_input).issubset)) & 
+                                 (df_filtered['Filming Countries'].map(set(country_input).issubset)) &
+                                 (df_filtered['Language(s)'].map(set(language_input).issubset)) & 
+                                 (df_filtered.Tags.map(set(tag_input).issubset))  & 
+                                 (df_filtered['Actors'].map(set(actor_input).issubset)) &
+                                 (df_filtered['Director(s)'].map(set(director_input).issubset)) 
+                                 ].sort_values('weighted_avg', ascending = False
+                                              ).head(10).drop(columns = ['weighted_avg','actors_downcased', 
+                                                                         'directors_downcased', 'title_downcased', 
+                                                                         'title_year', 'movieId', 'genre_str', 'decade'])
         # if no valid movies with combination of filters, notify. Else display dataframe
         if len(df_filtered) > 0:
             st.write(df_filtered)
