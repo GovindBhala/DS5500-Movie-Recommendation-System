@@ -6,10 +6,13 @@
 # - NOT saved for next session
 # - Add to LISTS instead of dataframes because mutable: persistant across sessions 
 #     - Thus can enter ID created in personalization page to get recommendations    
+# - User must add at least 2 ratings, else will produce no recommendations in the recommendation tab 
+#     - Because of normalization - rating becomes 0 
+#     - Add error handling for this to the personalized page? Message if < 2 ratings? 
 #       
 # __Questions:__
-# - Give option to make a new profile? Not sure how to do this     
-# - Save so persitant between sessions?
+# - Give option to make a new profile? Not sure how to do this  --- no because this is like 1 login 
+# - Save so persitant between sessions? -- yes, try to do this 
 
 # In[1]:
 
@@ -26,10 +29,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
 
-# In[19]:
+# In[ ]:
 
 
-def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
+def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, ratings):
     
     st.title('Create a New User Profile')
     st.write('(1) Type the title of a movie you have watched')
@@ -37,7 +40,8 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
     st.write('(3) Provide a rating from 0.5-5.0 (higher better)')
     st.write('(4) Click **Submit** to submit this rating. Repeat as many times as desired.                \n ' +
             'In order for us to generate recommendations, you must rate *at least two* movies.')
-    st.write('(5) Click **View Profile** to view your profile')
+    st.write('(5) Click **View & Save Profile** to view your profile and save it for next time. ' + 
+             'Please wait for the save to complete.')
     st.write('Enter your user ID on the Personalized Recommendation pages. Feel free to return and add more movies later.')
     st.write('')
     st.write('**Your User ID is: ' + str(userId_new[0]) + '**')
@@ -81,36 +85,42 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new):
                     new_titles.append(user_title)
                     new_users.append(userId_new[0])
                     
+                    # add to overall ratings df and save 
+                     #d = {'movieId':ids, 'rating':ratings, 'timestamp': [None]*len(ids), 'userId': [userId_new]*len(ids)}
+                    #ratings_df = pd.concat([ratings_df, pd.DataFrame(d)])
+                    
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
             st.write("Sorry, we can't find any matching movies")
             
     # view your profile 
-    if st.button('View Profile'):
+    if st.button('View & Save Profile'):
         # create dataframe from lists and display entered profile
         d = {'movieId':new_movies, 'title':new_titles, 'rating':[str(round(i, 1)) for i in new_ratings]}
         profile = pd.DataFrame(d)
         st.write('Here is your profile')
         st.write(profile)
-            
-        # print generated userId for user to use in personalized recs
-        #userId_new = ratings_df.userId.max() + 1 # generate a new user id 
         
-        #### originally tring to save so persistant across sessions. May return to this. 
-        #ratings_lst.append(ratings)
-        #user_lst.append([userID_new]*len(ratings))
-        
-        # append to ratings data and save so can load into personalization 
-        #d = {'movieId':ids, 'rating':ratings, 'timestamp': [None]*len(ids), 'userId': [userId_new]*len(ids)}
+        # create dataframe from lists of newly added from profile add
+        d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
+        new_ratings = pd.DataFrame(d)
 
-        #ratings_df = pd.concat([ratings_df, pd.DataFrame(d)])
-        #st.write('Saving your profile. Please wait...')
-                 
-        # save for future loads of app
-        #ratings_df.to_parquet('ratings_sample_useradd.parq', engine = 'fastparquet', compression = 'GZIP', index = False)
+        # sometimes duplicate movies from user profile adds - average ratings. Else matrix multiplication won't work
+        new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
+        new_ratings = new_ratings.reset_index(drop = False)
+
+        # in case saved/viewed profile previously, delete instances of this ID before so don't create duplicates
+        ratings = ratings[ratings.userId != userId_new[0]]
         
-        #st.write('Done! Please enter your ID number in the Personalized Recommendations page')    
+        # concat with original ratings
+        ratings = pd.concat([ratings, new_ratings], sort = False)
+        ratings = ratings.reset_index(drop = True)
         
+        # save 
+        st.write('Saving your profile. Please wait...')
+        ratings.to_parquet('ratings_sample_useradd.parq', engine = 'fastparquet', compression = 'GZIP', index = False)
+        st.write('Done!')
+    
     # return so can be used in this current run
     return new_ratings, new_users, new_movies, new_titles
 
