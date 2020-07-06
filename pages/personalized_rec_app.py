@@ -43,7 +43,7 @@ from fuzzywuzzy import fuzz
 # ## Load Data (cached)
 # Called in main app 
 
-# In[2]:
+# In[5]:
 
 
 @st.cache(allow_output_mutation=True)
@@ -253,24 +253,24 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                     
                     # for decade, only filter if chose an option (no NA default for selectbox)
                     if decade_input != 'Choose an option':
-                        df_filtered = df_display[(df_display.decade ==  decade_input)]
+                        rec_filtered = recommendation[(recommendation.decade ==  decade_input)]
                     else:
-                        df_filtered = df_display.copy()
+                        rec_filtered = recommendation.copy()
                     # filter dataframe
-                    df_filtered = df_filtered[(df_filtered.Genres.map(set(genre_input).issubset)) & 
-                                             (df_filtered['Filming Countries'].map(set(country_input).issubset)) &
-                                             (df_filtered['Language(s)'].map(set(language_input).issubset)) & 
-                                             (df_filtered.Tags.map(set(tag_input).issubset))  & 
-                                             (df_filtered['Actors'].map(set(actor_input).issubset)) &
-                                             (df_filtered['Director(s)'].map(set(director_input).issubset)) 
-                                             ].sort_values('weighted_avg', ascending = False
-                                                          ).head(10).drop(columns = ['weighted_avg','actors_downcased', 
-                                                                                     'directors_downcased', 'title_downcased', 
-                                                                                     'title_year', 'movieId', 'genre_str',
-                                                                                     'decade'])
+                    rec_filtered = rec_filtered[(rec_filtered.Genres.map(set(genre_input).issubset)) & 
+                                                (rec_filtered['Filming Countries'].map(set(country_input).issubset)) &
+                                                (rec_filtered['Language(s)'].map(set(language_input).issubset)) & 
+                                                (rec_filtered.Tags.map(set(tag_input).issubset))  & 
+                                                (rec_filtered['Actors'].map(set(actor_input).issubset)) &
+                                                (rec_filtered['Director(s)'].map(set(director_input).issubset)) 
+                                               ].sort_values('prediction', ascending = False
+                                                            ).head(10).drop(columns = ['weighted_avg', 'actors_downcased', 
+                                                                                       'directors_downcased', 'title_downcased', 
+                                                                                       'title_year', 'movieId', 'prediction',
+                                                                                       'genre_str'])
                     # if no valid movies with combination of filters, notify. Else display dataframe
-                    if len(df_filtered) > 0:
-                        st.write(df_filtered)
+                    if len(rec_filtered) > 0:
+                        st.write(rec_filtered)
                     else:
                         st.write('Found no recommended movies that match your selections')
 
