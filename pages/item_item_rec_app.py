@@ -137,7 +137,7 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
                 recs = recs.head(10)
 
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
-                                              'title_downcased', 'title_year', 'score', 'genre_str']))
+                                              'title_downcased', 'title_year', 'score', 'genre_str', 'decade']))
 
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
