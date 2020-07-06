@@ -121,7 +121,7 @@ def write(df, movieIds, indices, tfidf_matrix, movies_unique):
         # works for misspellings as well 
         # limit to 70% similarity 
         options = df.copy()
-        options['sim'] = options.title_downcased.apply(lambda row: fuzz.ratio(row, user_text))
+        options['sim'] = options.title_downcased.apply(lambda row: fuzz.token_sort_ratio(row, user_text))
         options = options[options.sim > 70].sort_values('sim', ascending = False).head(10).title_year.unique()
 
         # find movies that are similar to what they typed 

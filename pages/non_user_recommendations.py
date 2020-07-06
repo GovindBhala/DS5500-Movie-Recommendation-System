@@ -97,7 +97,12 @@ def unique_lists(df):
 # - Genome Tags
 # 
 # Default table is highest rated movies without filters    
-#    
+#      
+#      
+# Fuzzy string matching for actors and directors: token sort
+# - Tokenize phrases, sort alphabetically, join, find Levenshtein distance
+# - Alphabetical sort is important because user input: The Notebook but movie title: Notebook, The
+#     - Also could mix up order of words
 
 # In[2]:
 
@@ -135,7 +140,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         options = []
         actors_sim = actors_df.copy()
         for i in actor_input:
-            actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.ratio(row, i))
+            actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.token_sort_ratio(row, i))
             options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
                                                                       ).head(3).actors_upcased.unique())
         options = [item for sublist in options for item in sublist]    
@@ -163,7 +168,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         options = []
         directors_sim = directors_df.copy()
         for i in director_input:
-            directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.ratio(row, i))
+            directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.token_sort_ratio(row, i))
             options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
                                                                             ).head(3).directors_upcased.unique())
         options = [item for sublist in options for item in sublist]    
