@@ -267,7 +267,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                             ).head(10).drop(columns = ['weighted_avg', 'actors_downcased', 
                                                                                        'directors_downcased', 'title_downcased', 
                                                                                        'title_year', 'movieId', 'prediction',
-                                                                                       'genre_str'])
+                                                                                       'genre_str', 'decade'])
                     # if no valid movies with combination of filters, notify. Else display dataframe
                     if len(rec_filtered) > 0:
                         st.write(rec_filtered)
