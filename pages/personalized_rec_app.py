@@ -37,24 +37,30 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import fastparquet
 import streamlit as st
+import pickle
+import scipy
 from fuzzywuzzy import fuzz
 
 
 # ## Load Data (cached)
 # Called in main app 
 
-# In[5]:
+# In[4]:
 
 
 @st.cache(allow_output_mutation=True)
 def load_data():
-        
-    df = pd.read_parquet('processed_df.parq')
+      
+    # sparse movie dataframe with attached metadata (column titles, movieIds in row order)
+    df = scipy.sparse.load_npz("processed_df_sparse.npz")
+    with open('sparse_metadata', "rb") as f:
+        cols = pickle.load(f)
+        movieIds = pickle.load(f)
     # version of ratings that has manually entered user profiles added on 
     ratings = pd.read_parquet('ratings_sample_useradd.parq')
     ratings = ratings.reset_index(drop = True)
         
-    return df, ratings
+    return df, ratings, cols, movieIds
 
 
 # ## Combine ratings data with new profile created 
@@ -88,12 +94,12 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 # - Remove movies already watched/rated
 # - Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
 
-# In[3]:
+# In[14]:
 
 
 @st.cache(allow_output_mutation=True)
-def user_content_recommendations(user_id, df, df_display, ratings):   
-    
+
+def user_content_recommendations(user_id, df, df_display, ratings, movieIds):   
     """
     ratings_user: limit to one user
     
@@ -111,30 +117,30 @@ def user_content_recommendations(user_id, df, df_display, ratings):
                      sort
                      remove recommendations already watched
     """
-        
     ratings_user = ratings[ratings.userId == user_id]
-    movies_user = df[df.movieId.isin(ratings_user.movieId.unique())]
-    watched = movies_user.movieId.unique()
-    movies_user = movies_user.drop(columns = ['movieId', 'title_eng', 'year'])
-    
+    ratings_user = ratings_user.sort_values('movieId')
+    watched = ratings_user.movieId.unique()
+    watched_index = [movieIds.index(i) for i in watched]
+    movies_user = df[watched_index, :]
+        
     mean_rating = np.mean(ratings_user.rating)
     ratings_user.rating = ratings_user.rating - mean_rating
-
-    profile = movies_user.T.dot(ratings_user.rating.values)
     
-    recommendations = metrics.pairwise.cosine_similarity(df.drop(columns = ['movieId', 'title_eng', 'year']), 
-                                                         np.asmatrix(profile.values))
+    profile = scipy.sparse.csr_matrix(movies_user.T.dot(ratings_user.rating.values))
+   
+    recommendations = metrics.pairwise.cosine_similarity(df, profile)
     recommendations = pd.DataFrame(recommendations)
-    recommendations.columns = ['prediction']
-    recommendations = pd.merge(recommendations, df_display, 
-                               left_index = True, right_index = True, how = 'left')
-    #recommendations = recommendations.sort_values('prediction', ascending = False)
+    recommendations = pd.merge(recommendations, pd.Series(movieIds).to_frame(), left_index = True, right_index = True)
+    recommendations.columns = ['prediction', 'movieId']
     recommendations = recommendations[~recommendations.movieId.isin(watched)]
-    #recommen_ratings = pd.merge(recommendations,movies_raitings)
-    
+    recommendations = pd.merge(recommendations, df_display, on = 'movieId', how = 'left')
+    #recommendations = recommendations.sort_values('prediction', ascending = False)
+    #recommen_ratings = pd.merge(recommendations,movies_raitings, left_on = 'movieId', right_on = 'id')
+
     # NEW ADDITION FOR APP: limit to recommendations similarity > 0 
         # don't recommend movies that are similar to movies they dislike
     recommendations = recommendations[recommendations.prediction > 0]
+
     
     return recommendations
 
@@ -146,7 +152,7 @@ def user_content_recommendations(user_id, df, df_display, ratings):
 
 
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
-          language_unique, tags_unique, decades_unique, new_ratings, new_users, new_movies, df, ratings):
+          language_unique, tags_unique, decades_unique, new_ratings, new_users, new_movies, df, ratings, movieIds):
     
     # user instructions 
     st.title('Personalized Movie Recommendations')
@@ -179,7 +185,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
             # if valid ID, give recommendations 
             else:
                 # generate recommendations
-                recommendation = user_content_recommendations(userId_int, df, df_display, ratings)
+                recommendation = user_content_recommendations(userId_int, df, df_display, ratings, movieIds)
 
                 ## filtering 
                 # get user inputs: multiple selection possible per category except decade

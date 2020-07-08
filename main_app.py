@@ -75,15 +75,15 @@ def data_setup():
     movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions(df)
     
     # data for personalized recommendations
-    df_dummies, ratings_df = pages.personalized_rec_app.load_data()
+    df_dummies, ratings_df, cols, movieIds_pers = pages.personalized_rec_app.load_data()
     
-    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df
+    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers
 
 
 # In[1]:
 
 
-df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df = data_setup()
+df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers = data_setup()
 
 
 # ## Set up Empty New User Profile
@@ -135,7 +135,7 @@ PAGES = ['Home', 'Top Movie Visualizations', 'Top Rated Movies', 'Movie Based Re
 
 
 def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique,
-         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
+         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers,
          new_ratings, new_users, new_movies, new_titles, userId_new):
     
     st.sidebar.title("Navigation")
@@ -153,7 +153,7 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
                                          language_unique, tags_unique, decades_unique,
-                                         new_ratings, new_users, new_movies, df_dummies, ratings_df)
+                                         new_ratings, new_users, new_movies, df_dummies, ratings_df, movieIds_pers)
     if selection == 'Add Profile':
         new_ratings, new_users, new_movies, new_titles = pages.profile_add_app.write(df, new_ratings, new_users,
                                                                                      new_movies, new_titles, userId_new,
@@ -162,11 +162,16 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
     return new_ratings, new_users, new_movies, new_titles
 
 
+
+#### TODO: check df display merge is correct
+
+
 # In[ ]:
 
 
 new_ratings, new_users, new_movies, new_titles = main(df, genres_unique, actors_df, directors_df, countries_unique,
                                                       language_unique, tags_unique, decades_unique,
                                                       movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
+                                                      cols, movieIds_pers,
                                                       new_ratings, new_users, new_movies, new_titles, userId_new)
 
