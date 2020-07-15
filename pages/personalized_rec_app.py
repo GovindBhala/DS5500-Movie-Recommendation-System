@@ -40,6 +40,7 @@ import streamlit as st
 import pickle
 import scipy
 from fuzzywuzzy import fuzz
+import sklearn
 
 
 # ## Load Data (cached)
@@ -127,8 +128,14 @@ def user_content_recommendations(user_id, df, df_display, ratings, movieIds):
     ratings_user.rating = ratings_user.rating - mean_rating
     
     profile = scipy.sparse.csr_matrix(movies_user.T.dot(ratings_user.rating.values))
-   
-    recommendations = metrics.pairwise.cosine_similarity(df, profile)
+    
+    # normalize profile to account for different numbers of ratings
+    profile = sklearn.preprocessing.normalize(profile, axis = 1, norm = 'l2')
+    
+    # find similarity between profile and movies 
+    # cosine similarity except movies not normalized 
+    recommendations = df.dot(profile.T).todense()
+    
     recommendations = pd.DataFrame(recommendations)
     recommendations = pd.merge(recommendations, pd.Series(movieIds).to_frame(), left_index = True, right_index = True)
     recommendations.columns = ['prediction', 'movieId']
