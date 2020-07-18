@@ -19,7 +19,7 @@
 # - Allow user to filter down recommendations 
 # - Display recommendations 
 
-# In[1]:
+# In[63]:
 
 
 import pandas as pd
@@ -43,10 +43,18 @@ from fuzzywuzzy import fuzz
 import sklearn
 
 
+# In[65]:
+
+
+# import recommendation system 
+import content_based_recommendations
+import content_based_recommendations_combine
+
+
 # ## Load Data (cached)
 # Called in main app 
 
-# In[4]:
+# In[66]:
 
 
 @st.cache(allow_output_mutation=True)
@@ -66,12 +74,12 @@ def load_data():
 
 # ## Combine ratings data with new profile created 
 
-# In[6]:
+# In[68]:
 
 
 @st.cache(allow_output_mutation = True)
 def create_ratings_df(new_ratings, new_users, new_movies, ratings):
-            
+                
     # create dataframe from lists of newly added from profile add
     d = {'rating':new_ratings, 'userId':new_users, 'movieId':new_movies}
     new_ratings = pd.DataFrame(d)
@@ -95,59 +103,21 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 # - Remove movies already watched/rated
 # - Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
 
-# In[14]:
+# In[70]:
 
 
-@st.cache(allow_output_mutation=True)
-
-def user_content_recommendations(user_id, df, df_display, ratings, movieIds):   
-    """
-    ratings_user: limit to one user
+@st.cache(allow_output_mutation = True)
+def user_content_recommendations(user_id, df, df_display, ratings, movieIds): 
     
-    movies_user: movies rated by that user
+    # call recommendation system
+    recommendations = content_based_recommendations.user_content_recommendations(user_id, df, ratings, movieIds)
     
-    watched: keep track of movies already watched
-    
-    normalize ratings: subtract mean rating  from ratings
-                       if rating < mean, normalized rating will be negative. Which is worse than 0 aka not rating movie at all.
-    
-    profile:create user profile: multiply item profile by user ratings --> sum of ratings for each attribute 
-    
-    recommendations: cosine similarity between movie and user profile 
-                     merge to get title
-                     sort
-                     remove recommendations already watched
-    """
-    ratings_user = ratings[ratings.userId == user_id]
-    ratings_user = ratings_user.sort_values('movieId')
-    watched = ratings_user.movieId.unique()
-    watched_index = [movieIds.index(i) for i in watched]
-    movies_user = df[watched_index, :]
-        
-    mean_rating = np.mean(ratings_user.rating)
-    ratings_user.rating = ratings_user.rating - mean_rating
-    
-    profile = scipy.sparse.csr_matrix(movies_user.T.dot(ratings_user.rating.values))
-    
-    # normalize profile to account for different numbers of ratings
-    profile = sklearn.preprocessing.normalize(profile, axis = 1, norm = 'l2')
-    
-    # find similarity between profile and movies 
-    # cosine similarity except movies not normalized 
-    recommendations = df.dot(profile.T).todense()
-    
-    recommendations = pd.DataFrame(recommendations)
-    recommendations = pd.merge(recommendations, pd.Series(movieIds).to_frame(), left_index = True, right_index = True)
-    recommendations.columns = ['prediction', 'movieId']
-    recommendations = recommendations[~recommendations.movieId.isin(watched)]
+    # merge with display features
     recommendations = pd.merge(recommendations, df_display, on = 'movieId', how = 'left')
-    #recommendations = recommendations.sort_values('prediction', ascending = False)
-    #recommen_ratings = pd.merge(recommendations,movies_raitings, left_on = 'movieId', right_on = 'id')
 
-    # NEW ADDITION FOR APP: limit to recommendations similarity > 0 
+    # limit to recommendations similarity > 0 
         # don't recommend movies that are similar to movies they dislike
     recommendations = recommendations[recommendations.prediction > 0]
-
     
     return recommendations
 
@@ -155,7 +125,7 @@ def user_content_recommendations(user_id, df, df_display, ratings, movieIds):
 # ## Streamlit App
 # 
 
-# In[ ]:
+# In[6]:
 
 
 def write(df_display, genres_unique, actors_df, directors_df, countries_unique,

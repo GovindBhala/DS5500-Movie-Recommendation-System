@@ -26,7 +26,7 @@
 # 2. Run streamlit app
 #     - Run in command line: streamlit run main_app.py
 
-# In[1]:
+# In[5]:
 
 
 import streamlit as st 
@@ -44,7 +44,7 @@ import sklearn
 
 # ### Import Individual Pages
 
-# In[ ]:
+# In[2]:
 
 
 import pages.home_page
@@ -65,26 +65,20 @@ import pages.EDA_Streamlit_page
 def data_setup():
     # read in data created in recommendation_data_display.ipynb
     df = pd.read_parquet('recommendation_display.parq')
-    
-    # recombine genre lists to string for tf-idf for item-item recommendations 
-    df['genre_str'] = df.Genres.apply(lambda row: ' '.join(row))
 
     # get unique lists of all filter values for user selections 
-    genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique = pages.non_user_recommendations.unique_lists(df)
-    
-    # data for item-item recommendations
-    movieIds, indices, tfidf_matrix, movies_unique = pages.item_item_rec_app.cached_functions(df)
+    genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movies_unique = pages.non_user_recommendations.unique_lists(df)
     
     # data for personalized recommendations
-    df_dummies, ratings_df, cols, movieIds_pers = pages.personalized_rec_app.load_data()
+    df_dummies, ratings_df, cols, movieIds = pages.personalized_rec_app.load_data()
     
-    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers
+    return df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movies_unique, df_dummies, ratings_df, cols, movieIds
 
 
 # In[1]:
 
 
-df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers = data_setup()
+df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movies_unique, df_dummies, ratings_df, cols, movieIds = data_setup()
 
 
 # ## Set up Empty New User Profile
@@ -136,7 +130,7 @@ PAGES = ['Home', 'Top Movie Visualizations', 'Top Rated Movies', 'Movie Based Re
 
 
 def main(df, genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique,
-         movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df, cols, movieIds_pers,
+         movies_unique, df_dummies, ratings_df, cols, movieIds,
          new_ratings, new_users, new_movies, new_titles, userId_new):
     
     st.sidebar.title("Navigation")
@@ -150,11 +144,11 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
         pages.non_user_recommendations.write(df, genres_unique, actors_df, 
                                              directors_df, countries_unique, language_unique, tags_unique, decades_unique)
     if selection == 'Movie Based Recommendations':
-        pages.item_item_rec_app.write(df, movieIds, indices, tfidf_matrix, movies_unique)
+        pages.item_item_rec_app.write(df, df_dummies, ratings_df, movieIds)
     if selection == 'Personalized Recommendations':
         pages.personalized_rec_app.write(df, genres_unique, actors_df, directors_df, countries_unique,
                                          language_unique, tags_unique, decades_unique,
-                                         new_ratings, new_users, new_movies, df_dummies, ratings_df, movieIds_pers)
+                                         new_ratings, new_users, new_movies, df_dummies, ratings_df, movieIds)
     if selection == 'Add Profile':
         new_ratings, new_users, new_movies, new_titles = pages.profile_add_app.write(df, new_ratings, new_users,
                                                                                      new_movies, new_titles, userId_new,
@@ -163,16 +157,11 @@ def main(df, genres_unique, actors_df, directors_df, countries_unique, language_
     return new_ratings, new_users, new_movies, new_titles
 
 
-
-#### TODO: check df display merge is correct
-
-
 # In[ ]:
 
 
 new_ratings, new_users, new_movies, new_titles = main(df, genres_unique, actors_df, directors_df, countries_unique,
-                                                      language_unique, tags_unique, decades_unique,
-                                                      movieIds, indices, tfidf_matrix, movies_unique, df_dummies, ratings_df,
-                                                      cols, movieIds_pers,
+                                                      language_unique, tags_unique, decades_unique, movies_unique,
+                                                      df_dummies, ratings_df, cols, movieIds,
                                                       new_ratings, new_users, new_movies, new_titles, userId_new)
 

@@ -53,6 +53,7 @@ def unique_lists(df):
     language_unique = np.sort(cat_list_expand(df, 'Language(s)')['Language(s)'].unique())
     tags_unique = np.sort(cat_list_expand(df, 'Tags').Tags.unique())
     decades_unique = np.sort(df.decade.unique())
+    movies_unique = np.sort(df.title_year.unique())
     
     # actors and directors: user input fuzzy string matching.
     # Get version with lower case for user matching + upper case for display
@@ -67,8 +68,7 @@ def unique_lists(df):
     directors_df = directors_df[directors_df.duplicated() == False]    
     directors_df.columns = ['directors_downcased', 'directors_upcased']
     
-    
-    return genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique
+    return genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movies_unique
 
 
 # ## Display in Streamlit with filter options
