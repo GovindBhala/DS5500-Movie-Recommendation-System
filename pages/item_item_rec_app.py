@@ -70,8 +70,8 @@ def item_recs_combines(df1, df2, df_display, movieIds, user_movieId, keep_movies
     # concat half top recommendations from each model 
     recommendations = pd.concat([recs_notags.head(int(top_n/2)), recs_tags.head(int(top_n/2))])
 
-    # resort based on similarity scores
-    recommendations = recommendations.sort_values('prediction', ascending = False)
+    # resort based on weighted average: put most popular movies at the top to gain credibility 
+    recommendations = recommendations.sort_values('weighted_avg', ascending = False)
     
     return recommendations 
 
