@@ -61,15 +61,25 @@ import content_based_recommendations_combine
 def load_data():
       
     # sparse movie dataframe with attached metadata (column titles, movieIds in row order)
-    df = scipy.sparse.load_npz("processed_df_sparse.npz")
+    # two datasets for combined models 
+    df1 = scipy.sparse.load_npz("processed_df_sparse.npz")
+    df2 = scipy.sparse.load_npz("processed_df_tags_sparse.npz")
+    
     with open('sparse_metadata', "rb") as f:
-        cols = pickle.load(f)
+        cols1 = pickle.load(f)
         movieIds = pickle.load(f)
+
     # version of ratings that has manually entered user profiles added on 
     ratings = pd.read_parquet('ratings_sample_useradd.parq')
     ratings = ratings.reset_index(drop = True)
+    
+    # load movieId lists for movies with and without tags so can specify which movies to keep for which models
+    with open('movieIds_tags', "rb") as f:
+        movieIds_tags = pickle.load(f)
+    with open('movieIds_notags', "rb") as f:
+        movieIds_notags = pickle.load(f)
         
-    return df, ratings, cols, movieIds
+    return ratings, movieIds, df1, df2, movieIds_tags, movieIds_notags
 
 
 # ## Combine ratings data with new profile created 
@@ -250,7 +260,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                             ).head(10).drop(columns = ['weighted_avg', 'actors_downcased', 
                                                                                        'directors_downcased', 'title_downcased', 
                                                                                        'title_year', 'movieId', 'prediction',
-                                                                                       'genre_str', 'decade'])
+                                                                                       'decade'])
                     # if no valid movies with combination of filters, notify. Else display dataframe
                     if len(rec_filtered) > 0:
                         st.write(rec_filtered)

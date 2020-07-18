@@ -12,7 +12,7 @@
 #     
 # Process:
 
-# In[28]:
+# In[1]:
 
 
 import pandas as pd
@@ -26,11 +26,11 @@ import pickle
 
 # ## Item-Item Recommendations
 
-# In[ ]:
+# In[10]:
 
 
 @st.cache(allow_output_mutation = True)
-def item_recs(df, df_display, movieIds, user_movieId):
+def item_recs(df, df_display, movieIds, user_movieId, keep_movies):
     
     # get profile of selected movie
     selected_movie_index = movieIds.index(user_movieId)
@@ -50,8 +50,30 @@ def item_recs(df, df_display, movieIds, user_movieId):
     
     # remove entered movie
     recommendations = recommendations[recommendations.movieId != user_movieId]
+    
+    # remove movies not in keep_movies options
+    recommendations = recommendations[recommendations.movieId.isin(keep_movies)]
 
     return recommendations
+
+
+# In[15]:
+
+
+@st.cache(allow_output_mutation = True)
+def item_recs_combines(df1, df2, df_display, movieIds, user_movieId, keep_movies1, keep_movies2, top_n = 10):
+    
+    # recommendations from each model 
+    recs_notags = item_recs(df1, df_display, movieIds, user_movieId, keep_movies = keep_movies1)
+    recs_tags = item_recs(df2, df_display, movieIds, user_movieId, keep_movies = keep_movies2)
+    
+    # concat half top recommendations from each model 
+    recommendations = pd.concat([recs_notags.head(int(top_n/2)), recs_tags.head(int(top_n/2))])
+
+    # resort based on similarity scores
+    recommendations = recommendations.sort_values('prediction', ascending = False)
+    
+    return recommendations 
 
 
 # # Streamlit App with User Input
@@ -63,10 +85,10 @@ def item_recs(df, df_display, movieIds, user_movieId):
 #     - Some titles are duplicate so need year
 # - Get movieId from selection and use that as recommendation input
 
-# In[ ]:
+# In[17]:
 
 
-def write(df_display, df, ratings, movieIds):
+def write(df_display, df1, df2, movieIds, movieIds_notags, movieIds_tags):
 
     st.title('Similar Movie Recommendations')
     st.header('View movies similar to movies that you have enjoyed in the past')
@@ -100,10 +122,11 @@ def write(df_display, df, ratings, movieIds):
             if st.button('Display Recommendations'):
                 
                 # generate recommendations
-                recs = item_recs(df, df_display, movieIds, user_movieid)
-    
+                #recs = item_recs(df, df_display, movieIds, user_movieid)
+                recs = item_recs_combines(df1, df2, df_display, movieIds, user_movieid, movieIds_notags, movieIds_tags)
+                
                 # top 10
-                recs = recs.head(10)
+                #recs = recs.head(10)
 
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
                                               'title_downcased', 'title_year', 'decade', 'prediction']))
