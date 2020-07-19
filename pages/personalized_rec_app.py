@@ -63,7 +63,7 @@ def load_data():
     # sparse movie dataframe with attached metadata (column titles, movieIds in row order)
     # two datasets for combined models 
     df1 = scipy.sparse.load_npz("processed_df_sparse.npz")
-    df2 = scipy.sparse.load_npz("processed_df_tags_sparse.npz")
+    df2 = scipy.sparse.load_npz("processed_df_text_sparse.npz")
     
     with open('sparse_metadata', "rb") as f:
         cols1 = pickle.load(f)
