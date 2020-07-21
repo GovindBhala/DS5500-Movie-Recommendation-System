@@ -4,11 +4,11 @@
 # # Item-Item Recommendations for Non-Users (Similar Movies)
 # **Use Case**: User without a profile can get recommendations based on a movie they have previously enjoyed by displaying similar movies.    
 # Details:
-# - Allow users to put in a movie that they liked and output similar movies     
-# - For a first pass, use a simple tf-idf genre-based recommendation model. Will update with movie profiles from personalized recommendations     
-# - If same similarity score (aka same genres), recommend highest rated based on weighted average 
-#     - Generally want diverse recommendations, expose long tail HOWEVER these people are already non-users who are not rating movies, thus want to give credibility to draw them in and get them to watch anything 
-#     - Nothing to based the diverse recommendations on other than randomness. 
+# - Allow users to put in a movie that they liked and output similar movies 
+# - Use same content profiles as in personalized recommendations:
+#     - For movies with genome tags, find recommendations based on similarity with top tf-idf tokens of description+tags field
+#     - 
+# - Sort on weighted average: present most popular movies at the top to gain credibility, and then present long tail movies to generate more streaming after have gained trust  
 #     
 # Process:
 
@@ -26,7 +26,7 @@ import pickle
 
 # ## Item-Item Recommendations
 
-# In[10]:
+# In[14]:
 
 
 @st.cache(allow_output_mutation = True)
@@ -61,7 +61,7 @@ def item_recs(df, df_display, movieIds, user_movieId, keep_movies):
 
 
 @st.cache(allow_output_mutation = True)
-def item_recs_combines(df1, df2, df_display, movieIds, user_movieId, keep_movies1, keep_movies2, top_n = 10):
+def item_recs_combined(df1, df2, df_display, movieIds, user_movieId, keep_movies1, keep_movies2, top_n = 10):
     
     # recommendations from each model 
     recs_notags = item_recs(df1, df_display, movieIds, user_movieId, keep_movies = keep_movies1)
@@ -117,19 +117,25 @@ def write(df_display, df1, df2, movieIds, movieIds_notags, movieIds_tags):
 
             # select from dropdown 
             user_title = st.selectbox('Select Movie', options)
+            # get ID of selected movie
             user_movieid = df_display[df_display.title_year == user_title].movieId.values[0]
 
             if st.button('Display Recommendations'):
                 
-                # generate recommendations
-                #recs = item_recs(df, df_display, movieIds, user_movieid)
-                recs = item_recs_combines(df1, df2, df_display, movieIds, user_movieid, movieIds_notags, movieIds_tags)
-                
-                # top 10
-                #recs = recs.head(10)
+                # if selected movie has genome tags, 
+                    # use the combined model with 5 recs based on popular movies with tags and 5 form long tail w/o tasg
+                # if selected movie does not have genome tags, 
+                    # generate all 10 recommendations from metadata based model (genre, actor, director) w/ no limits on movies
+                if df_display[df_display.movieId == user_movieid].tags_num.values[0] > 0:
+                    recs = item_recs_combined(df1, df2, df_display, movieIds, user_movieid, movieIds_notags, movieIds_tags)
+                else:
+                    recs = item_recs(df1, df_display, movieIds, user_movieid, movieIds)
+                    recs = recs.head(10)
+                    recs = recs.sort_values('weighted_avg', ascending = False)
 
+                # display
                 st.write(recs.drop(columns = ['movieId', 'weighted_avg', 'actors_downcased', 'directors_downcased',
-                                              'title_downcased', 'title_year', 'decade', 'prediction']))
+                                              'title_downcased', 'title_year', 'decade', 'prediction', 'tags_num']))
 
         # if nothing > 70% similiarity, then can't find a matching movie
         else:
