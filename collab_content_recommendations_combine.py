@@ -69,3 +69,43 @@ def collab_content_combine(user_id, df1, ratings, movieIds, movies_ratings, keep
     
     return recommendations[['movieId', 'prediction']]
 
+def precision_recall_combined(user_id, df1, ratings, movieIds, keep_movies1, test_ratings,
+                           keep_movies2, content_recommendation_system, top_n = 10):
+    
+    collab_ratings = ratings[['userId','movieId','rating']]
+    min_rat = collab_ratings.rating.min()
+    max_rat = collab_ratings.rating.max()
+    reader = Reader(rating_scale=(min_rat,max_rat))
+    data = Dataset.load_from_df(collab_ratings, reader)
+    trainset = data.build_full_trainset()
+    algo = KNNBaseline()
+    algo.fit(trainset)
+
+    test_ratings = test_ratings[['userId','movieId','rating']]
+    testset = [tuple(x) for x in test_ratings.to_numpy()]
+
+
+    predictions = algo.test(testset)
+    collab_predictions = pd.DataFrame(predictions)
+    collab_predictions=collab_predictions[['uid','iid','est']]
+    collab_predictions= collab_predictions.rename(columns = {'est':'prediction', 'uid':'userId', 'iid':'movieId'})[['userId','movieId','prediction']]
+    collab_predictions[['userId','movieId']] = collab_predictions[['userId','movieId']].astype(int)
+    
+    # get recommendations from collab filtering model 
+    collab_rec = collab_predictions[collab_predictions.userId == user_id]
+    collab_rec = pd.merge(collab_rec, movies_ratings, on = 'movieId')
+    collab_rec = collab_rec.sort_values(['prediction', 'weighted_avg'], ascending = [False, True])
+
+    # find movies in full set that are not in collaborative filtering predictions for this user
+    keep_movies = set(movieIds).difference(set(collab_rec.movieId.unique()))
+    
+    # generate recommendations from content model with movies not in colalb filtering
+    content_rec = content_recommendation_system(user_id, df1, ratings, movieIds, movies_ratings, keep_movies)
+    
+    # concat half top recommendations from each model 
+    recommendations = pd.concat([collab_rec.head(int(top_n/2)), content_rec.head(int(top_n/2))])
+    
+    # resort based on similarity scores
+    recommendations = recommendations.sort_values('weighted_avg', ascending = False)
+    
+    return recommendations[['movieId', 'prediction']]
