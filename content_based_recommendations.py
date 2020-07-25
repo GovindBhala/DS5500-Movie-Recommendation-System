@@ -16,6 +16,8 @@
 #     - Only produce recommendations from a subset of movies (ex with vs without tags)
 #     - Still generate user profiles based on ALL movies rated so full look at feature preferences   
 #     - Could do this before matrix multiplication to find all similarities, but process to identify and exclude all indices of movies in sparse matrix takes too long. Faster to do at the end. 
+# - Sort first on similarity score (prediction) and secondarily on weighted average (first merge with movies_ratings) if same prediction
+#       
 #       
 # Parameters:
 # - user_id: ID of user to generate recommendations for
@@ -27,7 +29,8 @@
 #     - This is used in the combination models where we generate recommendations for X movies based on Y features and for the rest of the movies based on Z features
 #     - df will still include all movies because want to generate profiles based on all movies. Filter down after generate recommendations 
 #     - If [] will default produce all recommendations 
-# - df2, keep_movies2, recommendation_system, top_n: these are all dummy parameters so that this funciton as the same inputs as content_based_recommendations_combine.content_models_combine(). This way we can use the same code in the EvaluationFunctions notebook with the same parameters
+# - movies_ratings: df of movieIds with weighted average of count and average rating. Used to secondarily sort if same prediction from recommendation model
+# - df2, keep_movies2, recommendation_system, recommendation_system2, top_n, precision: these are all dummy parameters so that this funciton as the same inputs as other content models. This way we can use the same code in the EvaluationFunctions notebook with the same parameters
 
 # In[1]:
 
@@ -52,7 +55,8 @@ import scipy
 
 
 def user_content_recommendations(user_id, df, ratings, movieIds, movies_ratings, keep_movies = [],
-                                 df2 = False, keep_movies2 = [], recommendation_system = False, top_n = False):
+                                 df2 = False, keep_movies2 = [], recommendation_system = False, 
+                                 recommendation_system2 = False, top_n = False, precision = False):
     
     # limit ratings to specific user 
     ratings_user = ratings[ratings.userId == user_id]
