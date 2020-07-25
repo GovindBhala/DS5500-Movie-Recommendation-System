@@ -3,14 +3,15 @@
 
 # # Item-Item Recommendations for Non-Users (Similar Movies)
 # **Use Case**: User without a profile can get recommendations based on a movie they have previously enjoyed by displaying similar movies.    
-# Details:
-# - Allow users to put in a movie that they liked and output similar movies 
+# - Allow users to type in the title of a movie that they liked and output similar movies 
+#     - Too many to display as a dropdown. Streamlit crashes
 # - Use same content profiles as in personalized recommendations:
-#     - For movies with genome tags, find recommendations based on similarity with top tf-idf tokens of description+tags field
-#     - 
-# - Sort on weighted average: present most popular movies at the top to gain credibility, and then present long tail movies to generate more streaming after have gained trust  
-#     
-# Process:
+#     - If entered movie has genome tags, find 5 recommendations based on similarity with top tf-idf tokens of description+tags field among movies with tags and 5 recommendations based on similarity with genre, actor, directors among movies without tags (long tail)
+#     - If enter movie without genome tags, find all 10 reocmmendations based on similarity with genre, actor, directors. Movie doesn't have tags to compare with. 
+# - Sort on weighted average: present most popular movies at the top to gain credibility, and then present long tail movies to generate more streaming after have gained trust    
+#       
+# Note: if run this locally outside of app, data paths will be incorrect. Assuming running in streamlit, in which case main_app.py calls these scripts from the root folder, which is where the datasets live.   
+# Also, data is being passed in from main_app, so not all required data is loaded/created in this script
 
 # In[1]:
 
@@ -25,8 +26,14 @@ import pickle
 
 
 # ## Item-Item Recommendations
+# Generate item-item recommendations
+# - Profile of selected movie (user_movieId): non-zero features
+# - Similarity with all other movies in catalog. Result is the number of identical features (one hot encoded vectors)
+# - Merge with movieIds and display data
+# - Remove entered movie from recommendations
+# - Only keep movies in keep_movies set 
 
-# In[14]:
+# In[ ]:
 
 
 @st.cache(allow_output_mutation = True)
@@ -36,7 +43,7 @@ def item_recs(df, df_display, movieIds, user_movieId, keep_movies):
     selected_movie_index = movieIds.index(user_movieId)
     selected_movie = df[selected_movie_index,:]
     
-    # similarity with all movies: result is sum of similar features 
+    # similarity with all movies: result is sum of identical features 
         # ex 9 = 9 identical features. 0 = no identical features
     recommendations = pd.DataFrame(df.dot(selected_movie.T).todense())
     
@@ -44,10 +51,11 @@ def item_recs(df, df_display, movieIds, user_movieId, keep_movies):
     recommendations = pd.merge(recommendations, pd.Series(movieIds).to_frame(), left_index = True, right_index = True)
     recommendations.columns = ['prediction', 'movieId']
 
-    # sort and merge with display data
-    recommendations = recommendations.sort_values('prediction', ascending = False)
+    # merge with display data
     recommendations = pd.merge(recommendations, df_display, on = 'movieId', how = 'left')
-    
+    # sort on prediction and then weighted average if there's a tie
+    recommendations = recommendations.sort_values(['prediction', 'weighted_avg'], ascending = False)
+
     # remove entered movie
     recommendations = recommendations[recommendations.movieId != user_movieId]
     
@@ -56,6 +64,12 @@ def item_recs(df, df_display, movieIds, user_movieId, keep_movies):
 
     return recommendations
 
+
+# ## Combine Item-Item Recommendation models
+# - Model 1 (df1): recommendations of movies without tags (keep_movies1) based on genre, actors, directors
+# - Model 2 (df2): recommendations of movies with tags (keep_movie2) based on top tf-idf tokens of combined tags+description field 
+# - Take top 5 recommendations from each model
+# - Resort based on weighted average
 
 # In[15]:
 
@@ -76,7 +90,7 @@ def item_recs_combined(df1, df2, df_display, movieIds, user_movieId, keep_movies
     return recommendations 
 
 
-# # Streamlit App with User Input
+# # Streamlit App
 # - User input: text input
 # - Find options that are close to the text input based on fuzzy string matching
 #     - Works for not-quite-right movie title and misspellings
@@ -84,6 +98,8 @@ def item_recs_combined(df1, df2, df_display, movieIds, user_movieId, keep_movies
 # - Select out of drop down. Drop down includes (year) 
 #     - Some titles are duplicate so need year
 # - Get movieId from selection and use that as recommendation input
+# - If user selected movie has tags, use combined model. If no tags, use single model with genre, actors, directors
+# - Sort recommendations based on weighted average
 
 # In[17]:
 

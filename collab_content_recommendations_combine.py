@@ -47,23 +47,25 @@ import content_based_recommendations
 
 # not using keep_movies1 or keep_movies2 
 # collab_predictions as df2
-def collab_content_combine(user_id, df1, ratings, movieIds, keep_movies1, collab_predictions,
+def collab_content_combine(user_id, df1, ratings, movieIds, movies_ratings, keep_movies1, collab_predictions,
                            keep_movies2, content_recommendation_system, top_n = 10):
     
     # get recommendations from collab filtering model 
-    collab_rec = collab_predictions[collab_predictions.userId == user_id].sort_values('prediction', ascending = False)
+    collab_rec = collab_predictions[collab_predictions.userId == user_id]
+    collab_rec = pd.merge(collab_rec, movies_ratings, on = 'movieId')
+    collab_rec = collab_rec.sort_values(['prediction', 'weighted_avg'], ascending = [False, True])
 
     # find movies in full set that are not in collaborative filtering predictions for this user
     keep_movies = set(movieIds).difference(set(collab_rec.movieId.unique()))
     
     # generate recommendations from content model with movies not in colalb filtering
-    content_rec = content_recommendation_system(user_id, df1, ratings, movieIds, keep_movies)
+    content_rec = content_recommendation_system(user_id, df1, ratings, movieIds, movies_ratings, keep_movies)
     
     # concat half top recommendations from each model 
     recommendations = pd.concat([collab_rec.head(int(top_n/2)), content_rec.head(int(top_n/2))])
     
     # resort based on similarity scores
-    recommendations = recommendations.sort_values('prediction', ascending = False)
+    recommendations = recommendations.sort_values('weighted_avg', ascending = False)
     
     return recommendations[['movieId', 'prediction']]
 

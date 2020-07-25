@@ -133,10 +133,6 @@ def content_recommendations(user_id, df1, df2, df_display, ratings, movieIds, ke
     recommend1 = recommend1[recommend1.prediction > 0]
     recommend2 = recommend2[recommend2.prediction > 0]
 
-    # merge with display features
-    #recommend1 = pd.merge(recommend1, df_display, on = 'movieId', how = 'left')
-    #recommend2 = pd.merge(recommend2, df_display, on = 'movieId', how = 'left')
-
     return recommend1, recommend2
 
 
@@ -162,7 +158,6 @@ def collab_content_recommendations(user_id, df1, collab_predictions, df_display,
     
     # merge with display features
     collab_rec = pd.merge(collab_rec, df_display, on = 'movieId', how = 'left')
-    #content_rec = pd.merge(content_rec, df_display, on = 'movieId', how = 'left')
     
     return collab_rec, content_rec
 

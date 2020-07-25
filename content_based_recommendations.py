@@ -1,14 +1,40 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[14]:
+# ## Content Recommendations
+# Generate personalized recommendations based on the content of movies that the user has previously liked (rated positively). Recommend movies similar to those movies
+# 
+# Process: 
+# - Limit ratings to specified user
+# - Normalize ratings for user. If rating < mean, normalized ratings will be negative, which is worse than 0 aka the movie hasn't been rated at all
+# - Create user profile: sum of ratings for each attribute
+# - Generate recommendations: cosine similarity between movie and user profile 
+#     - Do not normalize movie profile. Else penalizing movies with more information 
+#     - Ex. Some movies do not have any actors or directors vectors because we excluded actors/directors only in 1 movie since that is not helpful for comparison. If we normalized movies, we would promote movies without actors/directors because their vectors are shorter. 
+# - Remove movies already watched/rated from recommendations
+# - Limit recommendations to movies listed in keep_movies parameter
+#     - Only produce recommendations from a subset of movies (ex with vs without tags)
+#     - Still generate user profiles based on ALL movies rated so full look at feature preferences   
+#     - Could do this before matrix multiplication to find all similarities, but process to identify and exclude all indices of movies in sparse matrix takes too long. Faster to do at the end. 
+#       
+# Parameters:
+# - user_id: ID of user to generate recommendations for
+# - df: sparse matrix of movie attributes in one hot encoded fashion
+#     - Depending on the attributes included in df, recommendations will be based on those attributes
+# - ratings: ratings data for each user (movies rated + star ratings)
+# - movieIds: list of all movieIds (rows of sparse matrix)
+# - keep_movies: subset of movies (list of movie ids) that we want to limit our recommendations to
+#     - This is used in the combination models where we generate recommendations for X movies based on Y features and for the rest of the movies based on Z features
+#     - df will still include all movies because want to generate profiles based on all movies. Filter down after generate recommendations 
+#     - If [] will default produce all recommendations 
+# - df2, keep_movies2, recommendation_system, top_n: these are all dummy parameters so that this funciton as the same inputs as content_based_recommendations_combine.content_models_combine(). This way we can use the same code in the EvaluationFunctions notebook with the same parameters
+
+# In[1]:
 
 
 import pandas as pd
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import datetime as datetime
 import operator
 import scipy.spatial.distance as distance
@@ -22,57 +48,53 @@ import fastparquet
 import scipy
 
 
-# ## Content Recommendations
-# Extensions:
-# - Include year (decade)?
-# - Include text from description or genome tags
-# - Downweight older ratings 
-
-# ### Version 2
-# Do not normalize ratings vectors. Only normalize profile. Then multiply matricies
-# Previously taking cosine similarity and thus normalizing both vectors. This caused longer movie vectors to be penalized, thereby prioritizing movies without any actor and/or director dummies because they were shorter.    
-# 
-# Normalize profile so take into account different # of ratings for different users.   
-# No need to normalize movies because 0/1 values and having more features is not a negative.  
-
-# In[ ]:
+# In[1]:
 
 
-def user_content_recommendations(user_id, df, ratings, movieIds):   
-    """
-    ratings_user: limit to one user
+def user_content_recommendations(user_id, df, ratings, movieIds, movies_ratings, keep_movies = [],
+                                 df2 = False, keep_movies2 = [], recommendation_system = False, top_n = False):
     
-    movies_user: movies rated by that user
-    
-    watched: keep track of movies already watched
-    
-    normalize ratings: subtract mean rating  from ratings
-                       if rating < mean, normalized rating will be negative. Which is worse than 0 aka not rating movie at all.
-    
-    profile:create user profile: multiply item profile by user ratings --> sum of ratings for each attribute 
-    
-    recommendations: cosine similarity between movie and user profile 
-                     merge to get title
-                     sort
-                     remove recommendations already watched
-    """
+    # limit ratings to specific user 
     ratings_user = ratings[ratings.userId == user_id]
     ratings_user = ratings_user.sort_values('movieId')
+    # record movies rated/watched
     watched = ratings_user.movieId.unique()
     watched_index = [movieIds.index(i) for i in watched]
+    # limit movies dataframe (df) to those rated movies
     movies_user = df[watched_index, :]
         
+    # normalize user ratings: subtract mean rating from ratings
+        # if rating < mean, normalized rating < 0. Worse than 0 aka not rating the movie at all
     mean_rating = np.mean(ratings_user.rating)
     ratings_user.rating = ratings_user.rating - mean_rating
     
+    # generate user profile: multiple item profile by user ratings -> sum of ratings for each movie attribute
     profile = scipy.sparse.csr_matrix(movies_user.T.dot(ratings_user.rating.values))
-   
-    recommendations = metrics.pairwise.cosine_similarity(df, profile)
+    
+    # normalize profile to account for different numbers of ratings
+    profile = sklearn.preprocessing.normalize(profile, axis = 1, norm = 'l2')
+    
+    # find similarity between profile and movies 
+    # cosine similarity *except* movies not normalized 
+    recommendations = df.dot(profile.T).todense()
+    
+    # merge recommendations back with movie Ids
     recommendations = pd.DataFrame(recommendations)
     recommendations = pd.merge(recommendations, pd.Series(movieIds).to_frame(), left_index = True, right_index = True)
     recommendations.columns = ['prediction', 'movieId']
+    
+    # remove watched movies from recommendations
     recommendations = recommendations[~recommendations.movieId.isin(watched)]
-    recommendations = recommendations.sort_values('prediction', ascending = False)
-    #recommen_ratings = pd.merge(recommendations,movies_raitings, left_on = 'movieId', right_on = 'id')
+    
+    # remove movies not in keep_movies options
+    if len(keep_movies) > 0:
+        recommendations = recommendations[recommendations.movieId.isin(keep_movies)]
+        
+    # merge with movie ratings
+    recommendations = pd.merge(recommendations, movies_ratings, on = 'movieId')
+    
+    # sort by similarity and weighted average
+    recommendations = recommendations.sort_values(['prediction', 'weighted_avg'], ascending = False)
+
     return recommendations
 

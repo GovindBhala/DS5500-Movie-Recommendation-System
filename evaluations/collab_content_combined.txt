@@ -1,13 +1,13 @@
-Personalization score for 10 folds across 20 users for top 10 recommendations: 0.955263157894737
-Avg Precision at 5 for 20 users: 0.0
-Avg Recall at 5 for 20 users: 0.0
-Avg Number of relevant recommendations at 5 for 20 users: 0.0
+Personalization score for 10 folds across 20 users for top 10 recommendations: 0.8743157894736842
+Avg Precision at 5 for 20 users: 0.05
+Avg Recall at 5 for 20 users: 0.006749847374847374
+Avg Number of relevant recommendations at 5 for 20 users: 0.25
 Avg Precision at 10 for 20 users: 0.025
 Avg Recall at 10 for 20 users: 0.006749847374847374
 Avg Number of relevant recommendations at 10 for 20 users: 0.25
 Avg Precision at 30 for 20 users: 0.008333333333333333
 Avg Recall at 30 for 20 users: 0.006749847374847374
 Avg Number of relevant recommendations at 30 for 20 users: 0.25
-Average diversity over 20 users for their top 10 recommendations (0 = identical): 0.7579525945015148
-Average movie rating of top 10 movies recommended to 20 users: 3.33
-Average of the minimum count of ratings for 20 user's top 10 recommendations (long tail):3.45
+Average diversity over 20 users for their top 10 recommendations (0 = identical): 0.7485707810810838
+Average movie rating of top 10 movies recommended to 20 users: 3.31
+Average of the minimum count of ratings for 20 user's top 10 recommendations (long tail):6.95
