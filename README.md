@@ -27,10 +27,13 @@ To achieve all of these goals, we use combinations of several models to produce 
 # Methodological Appendix
 
 ## Evaluation Metrics 
+- For all metrics, calculated on a random subset of users and average value taken across users. For personalization, take average across K sets (folds) of randm users because comparing userse to each other
+- Make sure to set the seed such that different models are evaluated on the same random subset 
+- Results from all models are recorded in 'evaluations' folder as text files 
 
 ### Personalization
-_Goal_: Maximize differences between move recommendations for different people
-_Method_: K fold cross-validation across several sets of users
+- _Goal_: Maximize differences between move recommendations for different people
+- _Method_: K fold cross-validation across several sets of users
 ![picture](images/personalization.PNG)
 
 ### Precision, Recall @ K
