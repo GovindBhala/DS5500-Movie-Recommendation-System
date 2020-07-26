@@ -7,10 +7,18 @@
 # Process:
 # - Combine ratings data with any newly created profiles
 # - User enters ID
-# - Check if valid ID (in ratings dataset)
-# - Generate recommendations
-#     - Do not display recommenations with cosine similarity < 0 even if fit filter
-# - Allow user to filter down recommendations 
+# - Check if personalized recommendations available -> collaborative-content combination model
+#     - Personalization trained on a subset of users that have rated at least 20 models
+#     - Pre-computed so will not include user added profiles 
+# - Otherwise check if valid ID (in ratings dataset) -> content combination model 
+# - Generate recommendations: full recommendation list from each model
+#     - Do not display recommenations if predicted will not like movie even if fit filter
+#         - Content: cosine similarity must be greater than 0
+#         - Collab: predicted rating must be greater than user's personal average movie rating 
+# - Allow user to select filters
+# - Apply filters to each set of recommendations 
+# - Merge filtered down lists. Ideally get 5 from each, but if filters such that fewer than 5 available from one, get as many as possible and fill in the rest of the 10 from the other set. 
+# - Sort combined set on weighted average: present most popular movies at the top to gain credibility, and then present long tail movies to generate more streaming after have gained trust    
 # - Display recommendations    
 #    
 # Note: if run this locally outside of app, data paths will be incorrect including recommendation system modules. Assuming running in streamlit, in which case main_app.py calls these scripts from the root folder, which is where the datasets live.    
@@ -44,7 +52,8 @@ import sklearn
 
 
 # import recommendation system (py scripts)
-from content_based_recommendations import user_content_recommendations
+from content_based_recommendations import recommendation_models.user_content_recommendations
+from collab_recommendations import recommendation_models.collab_recommendations
 
 
 # ## Load Data
@@ -52,6 +61,7 @@ from content_based_recommendations import user_content_recommendations
 # - Load two sparse matrices for the combined model. df1 is movie profiles with one hot encoded genre, (top 3) actors, directors. df2 is movie profiles with one hot encoded top 5 tfidf tokens from description+genome tags
 # - Load corresponding columns and movieIds (row) for sparse matrices. Don't need columns and movieIds are identical in the two datasets, so load just for df1
 #     - All movie ids in both datasets because want to generate user profile based on all movies they have rated. Then filter recommendations down to the target group
+# - Precomputed collaborative filtering predictions from a subset of users
 # - Load in ratings data. Version with user profiles added on from prior runs of app
 # - Load lists of movieIds with and without tags. Will generate recommendations from tagged movies with df2 and untagged movies with df1
 
@@ -70,8 +80,9 @@ def load_data():
         cols1 = pickle.load(f)
         movieIds = pickle.load(f)
 
-    # preloaded collaborative filtering predictions
+    # precomputed collaborative filtering predictions
     collab_predictions = pd.read_parquet('Predictions/KNN_predictions_df.parq')
+    # rename columns to be consistent 
     collab_predictions = collab_predictions.rename(columns = {'est':'prediction', 'uid':'userId', 'iid':'movieId'})
     collab_predictions = collab_predictions.drop(columns = ['r_ui', 'details.actual_k', 'details.was_impossible'])
         
@@ -116,8 +127,12 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 
 # ## Generate Recommendations 
 # - Generate recommendations from specified system 
-# - Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
-# - Merge with df_display to get features that we will disply on UI 
+# - Content: Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
+# - Collab: Limit recommendations to predicted rating > user's personal average. Don't display something they would DISlike
+#     - Also merge with df_display to get relevant features for display. Content model merge happens within module
+# - Do not sort or combine sets here: dealt with after filtering    
+#     
+# Cached so that when entering filter values, do not re-generate recommendations
 
 # In[25]:
 
@@ -125,6 +140,7 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 @st.cache(allow_output_mutation = True)
 def content_recommendations(user_id, df1, df2, df_display, ratings, movieIds, keep_movies1, keep_movies2): 
     
+    # generate two sets of recommendations 
     recommend1 = user_content_recommendations(user_id, df1, ratings, movieIds, df_display, keep_movies1)
     recommend2 = user_content_recommendations(user_id, df2, ratings, movieIds, df_display, keep_movies2)
     
@@ -142,7 +158,7 @@ def content_recommendations(user_id, df1, df2, df_display, ratings, movieIds, ke
 @st.cache(allow_output_mutation = True)
 def collab_content_recommendations(user_id, df1, collab_predictions, df_display, ratings, movieIds): 
     
-    collab_rec = collab_predictions[collab_predictions.userId == user_id]
+    collab_rec = collab_recommendations(user_id, df1, ratings, movieIds, df_display, [], collab_predictions, [])
 
     # find movies in full set that are not in collaborative filtering predictions for this user
     keep_movies = set(movieIds).difference(set(collab_rec.movieId.unique()))
@@ -153,11 +169,8 @@ def collab_content_recommendations(user_id, df1, collab_predictions, df_display,
     # limit content recs to similarity > 0 
     content_rec = content_rec[content_rec.prediction > 0]
 
-    # limit collabs recs to predicted rating > user's average rating (same as 0 marker above)
-    collab_rec = collab_rec[collab_rec.prediction > ratings[ratings.userId == user_id].rating.mean()]
-    
-    # merge with display features
-    collab_rec = pd.merge(collab_rec, df_display, on = 'movieId', how = 'left')
+    # limit collabs recs to predicted rating > user's average rating
+    collab_rec = collab_rec[collab_rec.prediction > ratings[ratings.userId == user_id].rating.mean()
     
     return collab_rec, content_rec
 
@@ -205,6 +218,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                                                                         df_display, ratings, movieIds)
                 recommend1 = recommend1.drop(columns = ['userId'])
                 
+            # if not in collab filtering, check if valid ID and produce content based recommendations
             elif userId_int in set(ratings.userId.unique()):
                 
                 # generate recommendations from combined content model 
@@ -213,7 +227,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
 
             else:
                 st.write('Not a valid ID')
-                recommend1 = pd.DataFrame()
+                recommend1 = pd.DataFrame() # empty dataframe so next if statement does not execute
                 
             if len(recommend1) > 0: 
             
@@ -295,7 +309,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                 # display recommendations once hit button
                 if st.button('Display Recommendations'):
                 
-                    # filter dataframe with rest of filters, sort and get top 10. Drop columns we don't want to display.
+                    # filter recommendation sets based on filters
                     rec1_filtered = recommend1[(recommend1.Genres.map(set(genre_input).issubset)) & 
                                                 (recommend1['Filming Countries'].map(set(country_input).issubset)) &
                                                 (recommend1['Language(s)'].map(set(language_input).issubset)) & 
@@ -315,7 +329,9 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                         rec1_filtered = rec1_filtered[(rec1_filtered.decade == decade_input)]
                         rec2_filtered = rec2_filtered[(rec2_filtered.decade == decade_input)]
                         
-                    # combine: 5 from each
+                    # Merge filtered down lists. 
+                    # Ideally get 5 from each, but if filters such that fewer than 5 available from one, 
+                    # get as many as possible and fill in the rest of the 10 from the other set
                     if len(rec1_filtered) >= 5 and len(rec2_filtered) >= 5:
                         rec_filtered = pd.concat([rec1_filtered.head(int(5)), rec2_filtered.head(int(5))])  
                     elif len(rec1_filtered) < 5:
@@ -323,7 +339,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                     elif len(rec2_filtered) < 5:
                         rec_filtered = pd.concat([rec1_filtered.head(int(10 - len(rec1_filtered))), rec2_filtered])  
 
-                    # sort based on weighted average
+                    # sort combination based on weighted average
                     rec_filtered = rec_filtered.sort_values('weighted_avg', ascending = False)
                     
                     # drop unnecessary columns for display
