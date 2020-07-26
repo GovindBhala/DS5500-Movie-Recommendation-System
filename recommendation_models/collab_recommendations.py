@@ -40,7 +40,6 @@ import pickle
 import scipy
 import sklearn
 from surprise import SVD, Dataset, Reader, KNNBaseline
-import content_based_recommendations
 
 
 # In[ ]:

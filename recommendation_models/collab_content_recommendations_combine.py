@@ -23,7 +23,7 @@
 # - top_n: number of recommendations total to produce
 # - precision: True if want to generate test rating predictions from collaboartive filtering rather than using precomputed predictions. Else False. 
 
-# In[121]:
+# In[1]:
 
 
 import pandas as pd
@@ -42,8 +42,6 @@ import pickle
 import scipy
 import sklearn
 from surprise import SVD, Dataset, Reader, KNNBaseline
-import content_based_recommendations
-import collab_recommendations
 
 
 # In[82]:
