@@ -7,11 +7,11 @@ This project creates a movie recommendation system with a Streamlit UI to provid
 ## Data 
 This project utilizes two public datasets. 
 
-1. MovieLens: movie rating data collected from the MovieLens application created by the GroupLens Research lab at the University of Minnesota. MovieLens provides non-commercial, personalized recommendations to users for free. We are using the 25 Million dataset, which includes ~58,000 movies with ratings from ~28M users. Ratings are from 0.5 to 5 stars with 0.5 increment. GroupLens also produces genome tags using a machine learning algorithm based on user inputted tags, ratings, and text reviews. Each movie is given a relevance score (0-1) for each tag.             
+1. __MovieLens__: movie rating data collected from the MovieLens application created by the GroupLens Research lab at the University of Minnesota. MovieLens provides non-commercial, personalized recommendations to users for free. We are using the 25 Million dataset, which includes ~58,000 movies with ratings from ~28M users. Ratings are from 0.5 to 5 stars with 0.5 increment. GroupLens also produces genome tags using a machine learning algorithm based on user inputted tags, ratings, and text reviews. Each movie is given a relevance score (0-1) for each tag.             
 Dataset: https://grouplens.org/datasets/movielens/            
 MovieLens Website: https://movielens.org/          
 
-2. IMDb movies extensive dataset: Scraped data from the IMDB website including release year, genre, duration, director(s), actors, production company, language, country, and description (and more).          
+2. __IMDb movies extensive dataset__: Scraped data from the IMDB website including release year, genre, duration, director(s), actors, production company, language, country, and description (and more).          
 Dataset (Kaggle): https://www.kaggle.com/stefanoleone992/imdb-extensive-dataset            
 
 We merge these two datasets on each movie's IDMB ID, which is provided in both datasets. We drop about 17,000 movies in this merge as the IMDB set does not include all of the movies in the MovieLens set. 
@@ -27,20 +27,44 @@ As described in the modeling section, some of our models are content-based and t
 ## UI Overview
 
 ## Models Overview
-The two pages on our UI that are backed by models are "Movie Based Recommendations" and "Personalized Recommendations". We use different types of models in these scenarios based on the movie's attributes for Movie Based (Item-Item) or user's attributes for Personalized.   
 
-![picture](images/model_flow.png)
-
-The evaluation metrics used to select our final models are discussed in depth in the Methodological Appendix. At a high level, we want recommendations with the following attributes:
+The __Evaluation Metrics__ used to select our final models are discussed in depth in the Methodological Appendix. At a high level, we want recommendations with the following attributes:
 - Personalized recommendations: provide materially different sets of recommendations for different users
 - Accurate recommendations: high precision and recall based on test/train split of user ratings
 - Personal diversity: provide variety of recommendations to each individual user
 - Average rating: recommend high quality movies with high average ratings
 - Global diversity: recommend movies in the long tail. Do not only recommend popular movies because this will not increase overall viewership, engagement with the streaming platform 
 
-To achieve all of these goals, we use combinations of several models to produce recommendations. 
-- Content-Based Models
-- Personalized Models  -- discuss pros and cons of these kinds of models in general and then our specific models and their pros/cons 
+To achieve all of these goals, we use combinations of several models to produce recommendations. At the highest level, there is a trade-off between content based models and collaborative filtering models.          
+              
+__Content-Based Models__: recommend movies with similar meta-data attributes to movies that the user had rated highly              
+Pros:
+  - Gobal diversity: no cold start problem - can recommend new and unpopular movies 
+  - Personalization: recommendations are not biased towards a smaller subset of popular movies. Content models will recommend a wide variety of movies, thus increasingly the likelihood of generating different recommendations for different users    
+              
+Cons:
+  - Personal diversity: over-specialization when defining a user's profile such that they are recommended a narrow set of very similar movies
+  - Accurate rating: it is very difficult to achieve good precision and recall because we are generating predictions for all of the ~45,000 in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad.            
+             
+__Collaborative Filtering Models__: recommend movies that were rated highly by users that have a similar rating history to the user                
+Pros:
+  - Average rating: biased towards popular movies which means both frequently watched and highly rated movies
+  - Accurate recommendations: users are more likely to rate popular movies and collaborative filtering models are more likely to recommend popular movies. Thus more likely than content to get a match between recommended and test set.          
+            
+Cons: 
+  - Personalization: biased towards a smaller subset of popular movies, so hard to generate different recommendations for different users
+  - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitely exclude movies with small numbers of ratings. 
+  
+Our final personalized model uses a collaborative filtering approach that uses KNN to find similar users to generate recommendations for movies that have more than 50 ratings. For all other movies, we use a content based approach that finds similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and present a list of 10 movies sorted by the weighted average between the movie's number of ratings and average rating. We thus recommend movies that we are confident the user will like through collaborative filtering and movies in the long tail through content-based to achieve all of our goals. We sort on weighted average because we want to present the most popular movies first in order to gain the user's trust, and then present the less popular "long-tail" movies that they likely have not heard of in hopes of increasing our platform's overall number of streams.   
+
+
+TODO: item-item describe + cases when can't use collab filtering
+
+
+The two pages on our UI that are backed by models are "Movie Based Recommendations" and "Personalized Recommendations". We use different types of models in these scenarios based on the movie's attributes for Movie Based (Item-Item) or user's attributes for Personalized.   
+
+![picture](images/model_flow.png)
+
 
 # Methodological Appendix
 
