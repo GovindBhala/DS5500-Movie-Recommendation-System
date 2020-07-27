@@ -7,12 +7,12 @@ This project creates a movie recommendation system with a Streamlit UI to provid
 ## Data 
 This project utilizes two public datasets. 
 
-1. MovieLens: movie rating data collected from the MovieLens application created by the GroupLens Research lab at the University of Minnesota. MovieLens provides non-commercial, personalized recommendations to users for free. We are using the 25 Million dataset, which includes ~58,000 movies with ratings from ~28M users. Ratings are from 0.5 to 5 stars with 0.5 increment. GroupLens also produces genome tags using a machine learning algorithm based on user inputted tags, ratings, and text reviews. Each movie is given a relevance score (0-1) for each tag. 
-Dataset: https://grouplens.org/datasets/movielens/
-MovieLens Website: https://movielens.org/
+1. MovieLens: movie rating data collected from the MovieLens application created by the GroupLens Research lab at the University of Minnesota. MovieLens provides non-commercial, personalized recommendations to users for free. We are using the 25 Million dataset, which includes ~58,000 movies with ratings from ~28M users. Ratings are from 0.5 to 5 stars with 0.5 increment. GroupLens also produces genome tags using a machine learning algorithm based on user inputted tags, ratings, and text reviews. Each movie is given a relevance score (0-1) for each tag.             
+Dataset: https://grouplens.org/datasets/movielens/            
+MovieLens Website: https://movielens.org/          
 
-2. IMDb movies extensive dataset: Scraped data from the IMDB website including release year, genre, duration, director(s), actors, production company, language, country, and description (and more). 
-Dataset (Kaggle): https://www.kaggle.com/stefanoleone992/imdb-extensive-dataset
+2. IMDb movies extensive dataset: Scraped data from the IMDB website including release year, genre, duration, director(s), actors, production company, language, country, and description (and more).          
+Dataset (Kaggle): https://www.kaggle.com/stefanoleone992/imdb-extensive-dataset            
 
 We merge these two datasets on each movie's IDMB ID, which is provided in both datasets. We drop about 17,000 movies in this merge as the IMDB set does not include all of the movies in the MovieLens set. 
  
