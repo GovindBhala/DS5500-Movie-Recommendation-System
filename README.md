@@ -25,6 +25,23 @@ As described in the modeling section, some of our models are content-based and t
 - Drop all categorical values that appear in only one movie. For example, actors in only one movie. These are not helpful for finding similar movies and increase memory, performance needs
 
 ## UI Overview
+Our UI is built on Streamlit (https://www.streamlit.io/)    
+It consists of 5 pages:
+1. Top Movie Visualizations: View visualizations of the movies in our catalog to understand what makes a great movie
+ - Subset of visualizations created in exploratory data analysis that would be informative to a user understanding how to choose a good movie to watch
+ - Use the checkboxes to view/close each visualization
+2. Top Rated Movies: Apply filters to find the top rated movies with your desired attributes
+ - Provide recommenations to non-users. Simple user inputs and filtering, no underpinned model
+ - Movies are sorted on the weighted average between their average rating and total number of ratings. If we sort on average rating only, there are many movies that are sorted only a few times and thus have unrealistically high average ratings 
+3. Movie Based Recommendations: Enter a movie that you have previously enjoyed to view similar movies
+ - Item-Item recommendation model. Find movies similar to the inputted movie based on its content profile
+4. Personalized Recommendations: Enter your user ID to find your personalized top movies + apply filters
+ - Personalized movies based on specific user. Uses a combination of user-user collaborative filtering with KNN and a content-based model
+ - User can filter down top recommendations 
+5. App Profile: If you are not in our system, create a new profile to enable personalized recommendations
+ - Generates a unique user ID
+ - User can enter movies and ratings to generate a new profile that can then be entered into the Personalized Recommendations tab
+
 
 ## Models Overview
 
