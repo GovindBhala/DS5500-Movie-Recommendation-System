@@ -24,7 +24,7 @@
 # Note: if run this locally outside of app, data paths will be incorrect including recommendation system modules. Assuming running in streamlit, in which case main_app.py calls these scripts from the root folder, which is where the datasets live.    
 # Also, data is being passed in from main_app, so not all required data is loaded/created in this script
 
-# In[20]:
+# In[73]:
 
 
 import pandas as pd
@@ -46,14 +46,15 @@ import pickle
 import scipy
 from fuzzywuzzy import fuzz
 import sklearn
+import surprise
 
 
 # In[ ]:
 
 
 # import recommendation system (py scripts)
-from content_based_recommendations import recommendation_models.user_content_recommendations
-from collab_recommendations import recommendation_models.collab_recommendations
+from recommendation_models.content_based_recommendations import user_content_recommendations
+from recommendation_models.collab_recommendations import collab_recommendations
 
 
 # ## Load Data
@@ -170,7 +171,7 @@ def collab_content_recommendations(user_id, df1, collab_predictions, df_display,
     content_rec = content_rec[content_rec.prediction > 0]
 
     # limit collabs recs to predicted rating > user's average rating
-    collab_rec = collab_rec[collab_rec.prediction > ratings[ratings.userId == user_id].rating.mean()
+    collab_rec = collab_rec[collab_rec.prediction > ratings[ratings.userId == user_id].rating.mean()]
     
     return collab_rec, content_rec
 
