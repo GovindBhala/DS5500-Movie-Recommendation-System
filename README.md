@@ -126,4 +126,91 @@ These flow diagrams represent the two model based pages in the UI.
 - _Method_: Minimize this metric 
 ![title](images/global_diversity.PNG)
 
-## Model Iteration & Performance 
+## Model Methodology, Iteration & Performance 
+
+We went through several stages of model building with many iterations in each stage. The iterations are as follows:
+1. __Content-based models__
+2. __Combined content-based models__ where some subset of movies are evaluated using one content model and the rest of the movies are evaluated with a different content model
+3. __Collaborative filtering models__
+4. __Combined content and collaborative filtering models__ where some subset of movies are evaluated using the collaborative filtering model and the rest of the movies are evaluated with a content model    
+         
+Next, we go through each of the stages to describe both the methodology used and the iterations attempted. We present numbers for each evaluation metric and describe the best model chosen for each stage. All of these evaluations can be found in the 'evaluations' folder as text files. Bolded model names are summarized in tables. You may also look into the evaluation files for the non-bolded models, as they are listed as a sub-bullet under each model.
+
+### 1. Content-Based Models
+
+__Methodology__
+1. Create movie profiles: one-hot-encodings of content features
+2. Normalize ratings: subtract user’s mean ratings from each rating 
+    - < 0: below average rating, > 0: above average rating
+3. Create user profile: sum of (normalized) ratings for each feature
+4. Find cosine similarity between user profile and every movie profile
+    - Only normalize user profile, NOT movie profile 
+    - Movie normalization penalizes movies with more information
+    - Ex. Some movies do not have any actors or directors vectors because we excluded actors/directors only in 1 movie since that is not helpful for comparison. If we normalized movies, we would promote movies without actors/directors because their vectors are shorter. 
+5. Remove movies already watched/rated from recommendations
+7. Sort first on similarity score (prediction) and secondarily on movie's rating weighted average if same prediction
+     
+__Iterations & Performance__
+- __Baseline__: : genre, (top 3) actors, direcetor 
+     - contentv2_noMovieNorm_eval.txt
+- Description TFIDF + Genre: 
+     - content_desc_genre_eval.txt 
+- __All meta-data__: genre, actor, director, decade, country, production company 
+     - content_all_meta_eval.txt
+- Individual features: try each individual feature in "all meta-data"
+     - content_<feature name>_eval.txt
+- Baseline + Production Company: (country and decade performed poorly individually, so try adding just production company to baseline)
+     - content_baseline_plus_prod_eval.txt
+- __Description TFIDF__: top 5 TF-IDF tokens from movie description
+     - content_desc_eval.txt
+- __Tags TFIDF__: top 5 TF-IDF genome tags
+     - content_tags_eval.txt
+- __Tags Relevant__:  top 5 genome tags by relevance score
+     - content_tags_rel_eval.txt
+- __Tags Relevant + Baseline__: top 5 tags by relevance + baseline features (actors, directors, genres)
+     - content_baseline_tags_rel_eval.txt 
+- __Text TFIDF__: top 5 TF-IDF text field (tags + description)
+     - content_text_eval.txt
+
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| Baseline | 0.99 | 0.02 | 0.007 | 0.52 | 6.4 | 3.2
+| All meta-data | 0.99 | 0.02 | 0.006 | 0.42 | 1.05 | 3
+| Description TFIDF | 0.99 | 0 | 0 | 0.62 | 1.1 | 3.1
+| Tags TFIDF | 0.96 | 0.075 | 0.02 | 0.36 | 415 | 3.8
+| Tags Relevant | 0.98 | 0.06 | 0.02 | 0.60 | 524 | 3.5
+| Tags Relevant + Baseline | 0.99 | 0.045 | 0.02 | 0.64 | 116 | 3.4
+| Text TFIDF | 0.96 | 0.085 | 0.02 | 0.32 | 647 | 3.8
+
+- Out of the non-text/TFIDF related models, the baseline performs the best. This implies that country, decade, and production company are not significantly important in forming an opinion about a movie as adding them worsened performance. The main benefit of adding actors and directors in addition to genres is that they provide differentiation to create more specific recommendations. In other words, if we form recommendations purely on genre, then all movies with the same genre list will have the same predicted similarity.     
+- For the text based models, it is unclear which model performs the best, but it is clear both that global diversity suffers and that these models perform better in precision and recall than the non-text models.           
+     - We first considered the description field because every movie has a description, but those tokens perform poorly.     
+     - Using genome tags provides a performance boost, but causes severe degradation in global diversity. This is because ~75% of movies don't have tags and tagged movies are heavily biased towards "popular" movies with many ratings. 
+     - Thus we combined tags with other metadata to increase coverage. We tried both baseline features (genres, actors, directors) and TFIDF based on a combined tags and description text field. Neither of these models significantly improved in global diversity. However, the TFIDF text model does perform best for precision and average rating, although its personal diversity score is lower than some other text based models. 
+
+__Conclusion/Next Steps__: using genome tags significnatly improves performance but results in poor global diversity. Thus try using two separate models: one for movies with tags and one for movies without tags. Combine recommendations from each model such that we provide both recommendations we are confident in that are recongizable movies and recommendations in the long tail that may increase overall streaming. 
+    - Tags are likely powerful because they capture the most important information from other meta-data. They include information like actors, genres, and plot themes.
+    
+### 2. Combined Content-Based Models
+
+__Methodology__     
+
+__Iterations & Performance__
+
+__Conclusion/Next Steps__       
+
+### 2. Collaborative Filtering Models
+
+__Methodology__     
+
+__Iterations & Performance__
+
+__Conclusion/Next Steps__       
+
+### 2. Combined Content and Collaborative Filtering Models
+
+__Methodology__     
+
+__Iterations & Performance__
+
+__Conclusion/Next Steps__       
