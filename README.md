@@ -1,6 +1,25 @@
 # DS5500-Movie-Recommendation-System
 
+ - [Data](#data)
+ - [UI Overview](#ui-overview)
+ - [Models Overview](#models-overview)
+ - [Repo Structure](#repo-structure)
+- [Methodological Appendix](#methodological-appendix)
+  * [Evaluation Metrics](#evaluation-metrics)
+    + [Personalization](#personalization)
+    + [Precision, Recall @ K](#precision-recall--k)
+    + [Personal Diversity](#personal-diversity)
+    + [Average Rating](#average-rating)
+    + [Global Diversity](#global-diversity)
+  * [Model Methodology, Iteration & Performance](#model-methodology-iteration--performance)
+    + [1. Content-Based Models](#1-content-based-models)
+    + [2. Combined Content-Based Models](#2-combined-content-based-models)
+    + [3. Collaborative Filtering Models](#3-collaborative-filtering-models)
+    + [4. Combined Content and Collaborative Filtering Models](#4-combined-content-and-collaborative-filtering-models)
+
 This project creates a movie recommendation system with a Streamlit UI to provide multiple types of users with tailored recommendations. Our ultimate goal is to increase viewership on a movie streaming platform and thus use these recommendations to help with the paradox of choice and to present new, "long tail" movies to users. Thus, we imagine this product being integrated into an existing streaming platform to utilize the platform's movie catalog and user's preferences through both explicit ratings and implicit clicks/views. To proxy this environment, we use the MovieLens dataset of user explicit ratings paired with IMDB movie metadata. The streamlit experience is intended to proxy a single login session in which users can view multiple types of recommendations and create their own personal profile if they do not have a pre-existing profile of rated movies. 
+
+
 
 ## Data 
 This project utilizes two public datasets. 
