@@ -2,8 +2,6 @@
 
 This project creates a movie recommendation system with a Streamlit UI to provide multiple types of users with tailored recommendations. Our ultimate goal is to increase viewership on a movie streaming platform and thus use these recommendations to help with the paradox of choice and to present new, "long tail" movies to users. Thus, we imagine this product being integrated into an existing streaming platform to utilize the platform's movie catalog and user's preferences through both explicit ratings and implicit clicks/views. To proxy this environment, we use the MovieLens dataset of user explicit ratings paired with IMDB movie metadata. The streamlit experience is intended to proxy a single login session in which users can view multiple types of recommendations and create their own personal profile if they do not have a pre-existing profile of rated movies. 
 
-## Structure of Repo
-
 ## Data 
 This project utilizes two public datasets. 
 
@@ -38,10 +36,9 @@ It consists of 5 pages:
 4. __Personalized Recommendations__: Enter your user ID to find your personalized top movies + apply filters
  - Personalized movies based on specific user. Uses a combination of user-user collaborative filtering with KNN and a content-based model
  - User can filter down top recommendations 
-5. __App Profile__: If you are not in our system, create a new profile to enable personalized recommendations
+5. __Add Profile__: If you are not in our system, create a new profile to enable personalized recommendations
  - Generates a unique user ID
  - User can enter movies and ratings to generate a new profile that can then be entered into the Personalized Recommendations tab
-
 
 ## Models Overview
 
@@ -85,6 +82,33 @@ These flow diagrams represent the two model based pages in the UI.
 
 ![picture](images/model_flow.png)
 
+## Repo Structure
+Folders:  
+- evaluations: text files with model evaluation results
+- images: PNG images used in ReadMe
+- pages: script modules for each page of streamlit UI (ipynb for development, py versions for modules)
+    - home_page: initial home page with instructions
+    - EDA_Streamlit_page: Top Movie Visualizations
+    - non_user_recommendations: Top Rated Movies
+    - item_item_rec_app: Movie Based Recommendations
+    - personalized_rec_app: Personalized Recommendations
+    - profile_add_app: Add Profile
+    - Images_rec folder: PNG images for EDA_Streamlit_page
+- recommendation_models: script modules for each recommendation model (ipynb for development, py versions for modules)
+    - content_based_recommendations: content model
+    - content_based_recommendations_combine: combine two content models
+    - collab_recommendations: collaborative model based on pre computed recommendations formed in Collaborative_Filtering_Recommendations
+    - collab_content_recommendations_combine: combine collaborative and content models
+    - TODO: add collaborative models
+    
+Note that this repo does not include all of the raw and processed data used in the project due to their large size and git size limitations. Raw data can be downloaded from the data links given above and processed data can be recreated by running scripts. 
+    
+Scripts (ipynb):
+- EvaluationFunction: evaluate recommendation model iterations with 5 metrics previously described
+- main_app: main streamlit UI function that calls in funcitons in pages folder for individual pages
+- recommendation data exploration: pre-processing and feature engineering of raw movie and ratings data
+- recommendation_data_display: prepare movie data for display on streamlit UI
+- movies_EDA: exploratory analysis of movies and rating data. Creates visualizations shown on Top Movie Visualizations page of UI 
 
 # Methodological Appendix
 
