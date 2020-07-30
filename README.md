@@ -89,7 +89,7 @@ These flow diagrams represent the two model based pages in the UI.
 # Methodological Appendix
 
 ## Evaluation Metrics 
-- For all metrics, calculated on a random subset of users and average value taken across users. For personalization, take average across K sets (folds) of randm users because comparing userse to each other
+- For all metrics, calculated on a random subset of users and average value taken across users. For personalization, take average across K sets (folds) of random users because comparing users to each other
 - Make sure to set the seed such that different models are evaluated on the same random subset 
 - Results from all models are recorded in 'evaluations' folder as text files 
 
@@ -182,7 +182,7 @@ __Iterations & Performance__
 | Tags Relevant + Baseline | 0.99 | 0.045 | 0.02 | 0.64 | 116 | 3.4
 | Text TFIDF | 0.96 | 0.085 | 0.02 | 0.32 | 647 | 3.8
 
-- Out of the non-text/TFIDF related models, the baseline performs the best. This implies that country, decade, and production company are not significantly important in forming an opinion about a movie as adding them worsened performance. The main benefit of adding actors and directors in addition to genres is that they provide differentiation to create more specific recommendations. In other words, if we form recommendations purely on genre, then all movies with the same genre list will have the same predicted similarity.     
+- Out of the non-text/TFIDF related models, the baseline performs the best across almost all metrics (except global diversity, but still very low number at 6.4). This implies that country, decade, and production company are not significantly important in forming an opinion about a movie as adding them worsened performance. The main benefit of adding actors and directors in addition to genres is that they provide differentiation to create more specific recommendations. In other words, if we form recommendations purely on genre, then all movies with the same genre list will have the same predicted similarity.     
 - For the text based models, it is unclear which model performs the best, but it is clear both that global diversity suffers and that these models perform better in precision and recall than the non-text models.           
      - We first considered the description field because every movie has a description, but those tokens perform poorly.     
      - Using genome tags provides a performance boost, but causes severe degradation in global diversity. This is because ~75% of movies don't have tags and tagged movies are heavily biased towards "popular" movies with many ratings. 
@@ -194,12 +194,62 @@ __Conclusion/Next Steps__: using genome tags significnatly improves performance 
 ### 2. Combined Content-Based Models
 
 __Methodology__     
+1. Fit two content models:
+    (1) Model based on meta-data out of movies without genome tags
+    (2) Model based on genome text features out of movies with genome tags 
+    - In both cases, generate predicted similarities for all movies and then limit to respective set of movies. Thus forming user profile based on all movies they have watched
+2. If producing N recommendations, choose top N/2 recommendations from model 1 and top N/2 recommendations from model 2
+3. Sort combined list of N recommendations on movie's rating weighted average, thereby producing the most recognizable/"credible" results first to gain the user's trust before presenting the long-tail recommendations 
 
 __Iterations & Performance__
 
-__Conclusion/Next Steps__       
+Two sections: 
+(1) Evaluate models on relevant dataset (movies with tags vs movies without tags)
+(2) Evaluate combined models on full dataset     
+For movies without tags, definitely using baseline model (genre, actors, directors) as it was the best performing. For movies with tags, it was not clear which model was best so iterate with all 3 of Tags TFIDF, Tags Relevant, Text TFIDF.    
 
-### 2. Collaborative Filtering Models
+(1) Evaluate models on relevant dataset
+- __Relevant Tags Only__: top 5 genome tags by relevance score ONLY with movies that have tags
+    - content_tags_rel_only_eval.txt
+- __TFIDF Tags Only__:  top 5 genome tags by TFIDF ONLY with movies that have tags
+    - content_tags_only_eval.txt
+- __TFIDF Text Tags Only__:  top 5 tags+description fields by TFIDF ONLY with movies that have tags
+    - content_text_tagsonly_eval.txt
+- __Baseline no tags__: basline model (genre, actor, director) ONLY for movies without tags 
+     - content_baseline_notags_eval.txt
+     
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| Relevant Tags Only | 0.98 | 0.03 | 0.007 | 0.59 | 356 | 3.5
+| TFIDF Tags Only | 0.96 | 0.07 | 0.008 | 0.36 | 910 | 3.8
+| TFIDF Text Tags Only | 0.95 | 0.075 | 0.02 | 0.31 | 688 | 3.8
+| Baseline no tags | 0.99 | 0.01 | 0.005 | 0.49 | 1.2 | 3.0
+     
+(2) Evaluate combined models on full dataset
+- __Combined Relevant__: combination of __Baseline no tags__ and __TFIDF Tags Only__ 
+     - content_twomodels_tags_rel_eval.txt
+- __Combined TFIDF__: combination of __Baseline no tags__ and __TFIDF Tags Only__
+    - content_twomodels_tags_eval.txt
+- __Combined Text__: combination of __Baseline no tags__ and __TFIDF Text Only__ 
+    - content_twomodels_text_eval.txt
+
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| Combined Relevant | 0.99 | 0.025 | 0.01 | 0.67 | 1.85 | 3.25
+| Combined TFIDF | 0.99 | 0.045 | 0.01 | 0.70 | 1.85 | 3.39
+| Combined Text | 0.98 | 0.055 | 0.015 | 0.69 | 1.85 | 3.42
+
+__Conclusions__       
+- Baseline performs slightly worse on movies with no tags compared to the full data. This is unsurprising since the long tail movies are less likely to be viewed and thus less likely to be in a user's test set for precision and recall 
+- Text based models perform similarly to the full data, which makes sense as the full data effectively ignored movies without tags for these models. 
+- The combined models perform in between the two individual models, which is logical. They also have higher personal diversity as we are using a larger, more diverse set of movies in the full data. The combined models all perform better than any individual model on all movies as they balance all metrics with middling precision and recall, but good reach of the long tail (global diversity).
+- The best combined model is Combined Text in terms of precision, recall, and average rating. All of its other stats are almost identical with the other models. 
+
+__Best Content Model:__ Combined Text
+- Recommendations for movies without tags: genre, actors, directors
+- Recommendations for movies with tags: top 5 TFIDF tokens from combined genome tags + description text field 
+
+### 3. Collaborative Filtering Models
 
 __Methodology__     
 
@@ -207,10 +257,15 @@ __Iterations & Performance__
 
 __Conclusion/Next Steps__       
 
-### 2. Combined Content and Collaborative Filtering Models
+### 4. Combined Content and Collaborative Filtering Models
 
-__Methodology__     
+__Methodology__    
+1. Fit collaborative filtering model for movies with more than 50 ratings
+2. Fit content model for movies with fewer than 50 ratings 
+3. If producing N recommendations, choose top N/2 recommendations from collaborative filtering model and top N/2 recommendations from content-based model
+4. Sort combined list of N recommendations on movie's rating weighted average, thereby producing the most recognizable/"credible" results first to gain the user's trust before presenting the long-tail recommendations 
 
-__Iterations & Performance__
+__Iterations & Performance__   
+
 
 __Conclusion/Next Steps__       
