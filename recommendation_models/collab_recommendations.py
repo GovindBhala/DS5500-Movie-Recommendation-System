@@ -42,7 +42,7 @@ import sklearn
 from surprise import SVD, Dataset, Reader, KNNBaseline
 
 
-# In[ ]:
+# In[1]:
 
 
 def collab_recommendations(user_id, df1, ratings, movieIds, movies_ratings, keep_movies1, df2,
@@ -51,14 +51,16 @@ def collab_recommendations(user_id, df1, ratings, movieIds, movies_ratings, keep
     
     if precision: 
         test_ratings = df2.copy()
-        
+        user_based = {'name': 'pearson_baseline',
+               'shrinkage': 0  # no shrinkage
+               }
         collab_ratings = ratings[['userId','movieId','rating']]
         min_rat = collab_ratings.rating.min()
         max_rat = collab_ratings.rating.max()
         reader = Reader(rating_scale=(min_rat,max_rat))
         data = Dataset.load_from_df(collab_ratings, reader)
         trainset = data.build_full_trainset()
-        algo = KNNBaseline()
+        algo = KNNBaseline(sim_options=user_based)
         algo.fit(trainset)
 
         test_ratings = test_ratings[['userId','movieId','rating']]
