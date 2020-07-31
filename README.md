@@ -92,9 +92,11 @@ Our __final personalized model__ uses a combination of collaborative filtering a
 
 Our app also provides movie based recommendations where the user inputs a movie and we recommend similar movies. The __final item-item model__ uses a purely content-based approach because we do not have user rating data in this instance. The final content model is a combination of two content profiles. For movies with genome tags, we find similar movies based on their top 5 TF-IDF tokens from a combined text field of genome tags plus movie description. For movies without genome tags, we find similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and, again, present a list of 10 movies sorted by the rating weighted average. Movies with tags are generally more popular with more ratings than movies without tags. The recommendations based on tags have better precision and recall than recommendations based on genre, actors, and directors, but they fail to reach the long tail. Thus, similar to the personalized model, we present a mix of confident recommendations and long-tail recommendations.
 
-There are two caveats to these two final models: 
+There are several caveats to these two final models: 
 1. If a user enters a new profile in the app during a session, we use the content-only based approach that we use for item-item. The collaborative filtering model is precomputed and requires training to generate recommendations. The content model meanwhile generates recommendations on demand. The new profile is saved and will be included in periodic collaborative retraining such that those recommendations would be available in the future. 
 2. If the movie entered on the 'Movie Based Recommendations' page does not have any genome tags, our recommendations will only be based on genres, actors, and directors. We cannot use tags to recommend if the reference movie does not have tags. 
+3. While collaborative filtering is designed to produce predictions for movies with more than 50 ratings, we were unable to train this model on our full user base due to processing limitations and thus not all movies with more than 50 ratings are given predictions. Instead, only movies with more than 50 ratings that have been viewed by at least one of the 5000 users that we trained collaborative filtering on are included. Thus we actually use the content-based model for all movies that are not in the collaborative filtering set, some of which have more than 50 ratings. 
+
 
 __Summary of the Model Flow__    
 These flow diagrams represent the two model based pages in the UI.
@@ -146,8 +148,11 @@ Scripts (ipynb):
 - _Method_: 
   - Select random uses who have rated at least 20 movies so that there enough movies to do a reasonable train/test split
   - Split data into train/test sets by selecting random users and then for each user, splitting their ratings half into test and half into train. 
-  - Generate recommendations based on training data. See if get movies from the test data that the user actually liked    
+  - Generate recommendations based on training data. See if recommend any movies from the test data that the user actually liked ("relevant movies")
+       - For content models and combined collaborative-content models, a movie is considered a relevant movie with rating >= 2. This is a low threshold because it is very difficult, as discussed in the next bullet, to retrieve user rated movies using content models, so we want to be generous in the definition. 
+       - For collaborative filtering models, a movie is considered a relevant movie with rating >= 4. The precision and recall stats are much higher for these models and thus we can be more restrictive in our definition. 
   - Ideally would have real time user feedback, for the recommendations we produce to assess accuracy. Test/train split is a proxy in lieu of that data. It is very difficult, especially for content based recommendation systems, to achieve good precision and recall because we are generating predictions for all of the ~45.000 in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad. 
+  
   
 ![title](images/precision_recall.PNG)
 
@@ -195,7 +200,7 @@ __Methodology__
 7. Sort first on similarity score (prediction) and secondarily on movie's rating weighted average if same prediction
      
 __Iterations & Performance__
-- __Baseline__: : genre, (top 3) actors, direcetor 
+- __Baseline__: genre, (top 3) actors, director 
      - contentv2_noMovieNorm_eval.txt
 - Description TFIDF + Genre: 
      - content_desc_genre_eval.txt 
@@ -247,9 +252,9 @@ __Methodology__
 
 __Iterations & Performance__
 
-Two sections: 
-(1) Evaluate models on relevant dataset (movies with tags vs movies without tags)
-(2) Evaluate combined models on full dataset     
+Two sections:              
+(1) Evaluate models on relevant dataset (movies with tags vs movies without tags)       
+(2) Evaluate combined models on full dataset           
 For movies without tags, definitely using baseline model (genre, actors, directors) as it was the best performing. For movies with tags, it was not clear which model was best so iterate with all 3 of Tags TFIDF, Tags Relevant, Text TFIDF.    
 
 (1) Evaluate models on relevant dataset
@@ -299,17 +304,44 @@ __Methodology__
 
 __Iterations & Performance__
 
-__Conclusion/Next Steps__       
+__Conclusions__       
 
 ### 4. Combined Content and Collaborative Filtering Models
 
-__Methodology__    
+__Methodology__        
 1. Fit collaborative filtering model for movies with more than 50 ratings
-2. Fit content model for movies with fewer than 50 ratings 
+    - Only train collaborative filtering for a subset of 5000 users due to processing limitations. Thus not all movies with more than 50 ratings are included. Instead, only movies with more than 50 ratings that have been viewed by at least one of the 5000 users are included.
+2. Fit content model for movies with fewer than 50 ratings (+ all other movies not included in collaborative filtering)
 3. If producing N recommendations, choose top N/2 recommendations from collaborative filtering model and top N/2 recommendations from content-based model
 4. Sort combined list of N recommendations on movie's rating weighted average, thereby producing the most recognizable/"credible" results first to gain the user's trust before presenting the long-tail recommendations 
 
-__Iterations & Performance__   
+__Iterations & Performance__         
+               
+Two sections:              
+(1) Which content model to use for movies not included in collaborative filtering          
+(2) Combined content and collaborative filtering model           
 
+(1) Which content model       
+- __Baseline__:  genre, (top 3) actors, director for movies not in collaborative filtering
+     - content_baseline_nocollab_eval.txt
+- __Combined Text__: best content model for movies not in collaborative filtering
+     - content_combined_tags_nocollab_eval.txt   
+        
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| Baseline | 0.99 | 0.005 | 0.0003 | 0.30 | 1.3 | 2.9 
+| Combined Text | 0.87 | 0.01 | 0.001 | 0.53 | 1.85 | 3.16
 
-__Conclusion/Next Steps__       
+(2) Combined content and collaborative filtering model
+- __KNN + Baseline__: Combining best collaborative filtering and best content based model (see conclusions section for why Baseline was selected)
+     - collab_content_combine_5000users.txt
+
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| KNN + Baseline | 0.91 | 0.50 | 0.17 | 0.40 | 1.85| 3.01 
+
+__Conclusions__       
+- Using the baseline content model because while the combined text performs better along some metrics, the text TFIDF section of the combined model is given access to a very small number of movies. There are few movies with tags that are not included in collaborative filtering. You can see this in the lower personalization score since these few movies are selected among for half of the recommendations for every user.
+- The combined collaborative-content model performs far better than the best content model in terms of precision and recall, while still reaching the long tail effectively. It performs slightly worse in personalization, but user recommendations are still 90% different. Additionally, personal diversity is worse than some other models at 40%. This is counterintuitive to our assumption that content models perform worse for personal diversity due to over-specialization. Regardless, our UI provides a workaround for poor personal diversity by allowing users to provide filters to see different types of recommendations, so we are willing to make this trade-off in favor of personalization.
+
+__Best Overall Personalization Model:__ KNN + Baseline
