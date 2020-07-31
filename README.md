@@ -118,11 +118,11 @@ Folders:
     - content_based_recommendations_combine: combine two content models
     - collab_recommendations: collaborative model based on pre computed recommendations formed in Collaborative_Filtering_Recommendations
     - collab_content_recommendations_combine: combine collaborative and content models
-    - TODO: add collaborative models
-    
-Note that this repo does not include all of the raw and processed data used in the project due to their large size and git size limitations. Raw data can be downloaded from the data links given above and processed data can be recreated by running scripts. 
+- processed_files: processed data files 
+    - This repo does not include all of the raw and processed data used in the project due to their large size and git size limitations. Raw data can be downloaded from the data links given above and processed data can be recreated by running scripts. 
     
 Scripts (ipynb):
+- Collaborative_Filtering_Recommendation_Model: train collaborative filtering model(s) 
 - EvaluationFunction: evaluate recommendation model iterations with 5 metrics previously described
 - main_app: main streamlit UI function that calls in funcitons in pages folder for individual pages
 - recommendation data exploration: pre-processing and feature engineering of raw movie and ratings data
