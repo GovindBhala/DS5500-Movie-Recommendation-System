@@ -144,6 +144,7 @@ Scripts (ipynb):
 ### Precision, Recall @ K
 - _Goal_: Maximize "accuracy" of model i.e. ability to retrieve recommendations that user's actually like
 - _Method_: 
+  - Select random uses who have rated at least 20 movies so that there enough movies to do a reasonable train/test split
   - Split data into train/test sets by selecting random users and then for each user, splitting their ratings half into test and half into train. 
   - Generate recommendations based on training data. See if get movies from the test data that the user actually liked    
   - Ideally would have real time user feedback, for the recommendations we produce to assess accuracy. Test/train split is a proxy in lieu of that data. It is very difficult, especially for content based recommendation systems, to achieve good precision and recall because we are generating predictions for all of the ~45.000 in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad. 
