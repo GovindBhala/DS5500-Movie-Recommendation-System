@@ -132,7 +132,8 @@ def create_ratings_df(new_ratings, new_users, new_movies, ratings):
 # - Content: Limit recommendations to similarity > 0 so that when filtering, don't display something they would DISlike 
 # - Collab: Limit recommendations to predicted rating > user's personal average. Don't display something they would DISlike
 #     - Also merge with df_display to get relevant features for display. Content model merge happens within module
-# - Do not sort or combine sets here: dealt with after filtering    
+# - Do not sort or combine sets here: dealt with after filtering   
+#     - This is why we don't use the combination functions used in evaluations
 #     
 # Cached so that when entering filter values, do not re-generate recommendations
 
@@ -181,6 +182,33 @@ def collab_content_recommendations(user_id, df1, collab_predictions, df_display,
 # - See notes on filtering options in non_user_recommendations script/notebook. Identical filter options here. 
 # - Combine existing ratings with profiles newly created in the 'add profile' tab of UI. Then if enter userId generated there, will be able to produce recommendations
 
+# In[ ]:
+
+
+@st.cache(allow_output_mutation=True)
+def fuzzy_matching(user_input, original_df, var):
+    # downcase input
+    user_input = user_input.lower()
+    # split into list based on commas
+    user_input = user_input.split(', ')
+
+    # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
+        # works for misspellings as well 
+        # limit to 70% similarity 
+    options = []
+    sim_df = original_df.copy()
+    for i in user_input:
+        # find similarity ratio between input and all unique actors (downcased)
+        sim_df['sim'] = sim_df[var + '_downcased'].apply(lambda row: fuzz.token_sort_ratio(row, i))
+        # get top 3 with similarity > 70%
+        options.append(sim_df[sim_df.sim > 70].sort_values('sim', ascending = False
+                                                          ).head(3)[var + '_upcased'].unique())
+    # flatten options list
+    options = [item for sublist in options for item in sublist]    
+
+    return options
+
+
 # In[5]:
 
 
@@ -210,23 +238,24 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
         except ValueError:
             st.write('Not a valid ID')
             
-        # if valid integer, find if ID is in collaborative filtering set or not. Newly entered users will be in collab filter.
+        # if valid integer, find if ID is in collaborative filtering set or not. 
+        # this will not including newly entered user profiles
         else: 
-            #set(collab_predictions.userId.unique())
-            if userId_int in set(ratings.userId.unique()).intersection(set(collab_predictions.userId.unique())):
+            if userId_int in set(collab_predictions.userId.unique()):
                 
                 # generate recommendations form collab-content combined model
                 recommend1, recommend2 = collab_content_recommendations(userId_int, df1, collab_predictions, 
                                                                         df_display, ratings, movieIds)
                 recommend1 = recommend1.drop(columns = ['userId'])
                 
-            # if not in collab filtering, check if valid ID and produce content based recommendations
+            # if not in collab filtering, check if valid ID and produce content based recommendations. Newly entered profiles.
             elif userId_int in set(ratings.userId.unique()):
                 
                 # generate recommendations from combined content model 
                 recommend1, recommend2 = content_recommendations(userId_int, df1, df2, df_display, ratings, movieIds,
                                                                  keep_movies1, keep_movies2)
 
+            # only other option is not valid recommendation
             else:
                 st.write('Not a valid ID')
                 recommend1 = pd.DataFrame() # empty dataframe so next if statement does not execute
@@ -244,28 +273,10 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
 
                 # actors, directors get text inputs - dropdowns too many values for streamlit to handle
                 # allow multiple entries with a commoa 
-                actor_input = st.text_input('Type actor(s) names separated by commas. ' +
-                                            'Select intended actor(s) from dropdown that appears')
+                actor_input = st.text_input('Type actor(s) names separated by commas. Select intended actor(s) from dropdown that appears')
                 if actor_input != '':
 
-                    # downcase input
-                    actor_input = actor_input.lower()
-                    # split into list based on commas
-                    actor_input = actor_input.split(', ')
-
-                    # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
-                        # works for misspellings as well 
-                        # limit to 70% similarity 
-                    options = []
-                    actors_sim = actors_df.copy()
-                    for i in actor_input:
-                        # find similarity ratio between input and all unique actors (downcased)
-                        actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.token_sort_ratio(row, i))
-                        # get top 3 with similarity > 70%
-                        options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                                  ).head(3).actors_upcased.unique())
-                    # flatten options list
-                    options = [item for sublist in options for item in sublist]    
+                    options = fuzzy_matching(actor_input, actors_df, 'actors')
 
                     # list actors that are similar to what they typed and accept user selection(s)
                     if len(options) > 0:
@@ -279,25 +290,8 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
                 director_input = st.text_input('Type director(s) names separated by commas. ' + 
                                                'Select intended director(s) from dropdown that appears')
                 if director_input != '':
-                    # downcase input
-                    director_input = director_input.lower()
-                    # split into list 
-                    director_input = director_input.split(', ')
 
-                    # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
-                        # works for misspellings as well 
-                        # limit to 70% similarity 
-                    options = []
-                    directors_sim = directors_df.copy()
-                    for i in director_input:
-                        # find similarity ratio between input and all unique directors (downcased)
-                        directors_sim['sim'] = directors_sim.directors_downcased.apply(
-                            lambda row: fuzz.token_sort_ratio(row, i))
-                        # get top 3 with similarity > 70%
-                        options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                                        ).head(3).directors_upcased.unique())
-                    # flatten options list
-                    options = [item for sublist in options for item in sublist]    
+                    options = fuzzy_matching(director_input, directors_df, 'directors')
 
                     # list directors that are similar to what they typed and accept user selection(s)
                     if len(options) > 0:

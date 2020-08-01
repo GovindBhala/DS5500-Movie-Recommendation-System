@@ -8,7 +8,11 @@
 # Process: 
 # - Allow users to choose multiple selections from filters using AND logic 
 #     - For directors and actors, allow them to enter free text and display the top 3 most similar values in dataset for them to choose between 
-# - Once hit view recommendations, display sorted movies in the chosen categories
+#         - If display full alphabetized lists, too much data for streamlit to handle and app crashes
+# - Once hit view recommendations, display sorted movies in the chosen categories   
+#         
+# Note: if run this locally outside of app, data paths will be incorrect. Assuming running in streamlit, in which case main_app.py calls these scripts from the root folder, which is where the datasets live.   
+# Also, data is being passed in from main_app, so not all required data is loaded/created in this script
 
 # In[1]:
 
@@ -25,7 +29,10 @@ from fuzzywuzzy import fuzz
 
 
 # ## Get Unique Lists of Filter Options
-# Options for users to choose from. Called in data prep section of main app
+# Options for users to choose from in the streamlit dropdowns. Sorted alphabetically      
+# For actors, directors get versions with upcase and downcase. Uppercased for display and downcased for checking against user input        
+# Called in data prep section of main app.  
+# 
 
 # In[2]:
 
@@ -87,22 +94,52 @@ def unique_lists(df):
 # - Number of ratings
 # - Average rating    
 #    
-# Filter by:
+# Filter by: (unless otherwise stated, multiselect so can select multiple with AND logic)
 # - Genres
 # - Decade of release
-# - Actors
-# - Directors
+#     - Single select dropdown. AND logic, so can't have a movie in multiple decade
 # - Country
 # - Language
 # - Genome Tags
+# - Actors
+# - Directors
+#     - Actors, directors with free text input -> string matching -> choose among 3 best options in dropdown
+#     - Allow multiple entries and selections if separate by a comma
 # 
 # Default table is highest rated movies without filters    
 #      
 #      
 # Fuzzy string matching for actors and directors: token sort
 # - Tokenize phrases, sort alphabetically, join, find Levenshtein distance
-# - Alphabetical sort is important because user input: The Notebook but movie title: Notebook, The
-#     - Also could mix up order of words
+# - Alphabetical sort is important because user input: The Notebook but movie title: Notebook, The    
+# - Cached function so that once user types in the box, the app won't redo the fuzzy matching process every time a user changes a filter afterwards
+
+# In[1]:
+
+
+@st.cache(allow_output_mutation=True)
+def fuzzy_matching(user_input, original_df, var):
+    # downcase input
+    user_input = user_input.lower()
+    # split into list based on commas
+    user_input = user_input.split(', ')
+
+    # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
+        # works for misspellings as well 
+        # limit to 70% similarity 
+    options = []
+    sim_df = original_df.copy()
+    for i in user_input:
+        # find similarity ratio between input and all unique actors (downcased)
+        sim_df['sim'] = sim_df[var + '_downcased'].apply(lambda row: fuzz.token_sort_ratio(row, i))
+        # get top 3 with similarity > 70%
+        options.append(sim_df[sim_df.sim > 70].sort_values('sim', ascending = False
+                                                          ).head(3)[var + '_upcased'].unique())
+    # flatten options list
+    options = [item for sublist in options for item in sublist]    
+
+    return options
+
 
 # In[2]:
 
@@ -118,34 +155,21 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     st.write('Please note filters use AND logic')
     
     # get user inputs: multiple selection possible per category except decade
+    # input sorted list of unique options 
     genre_input = st.multiselect('Select genre(s)', genres_unique)
-    decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique))
+    decade_input = st.selectbox('Select film decade', ['Choose an option'] + list(decades_unique)) # single option select 
     country_input = st.multiselect('Select filming country(s)', countries_unique)
     language_input = st.multiselect('Select language(s)', language_unique)
     tag_input = st.multiselect('Select genome tags(s)', tags_unique)
     
-    # actors, directors get text inputs
-    # Dropdowns too many values for streamlit to handle
+    # actors, directors get text inputs - dropdowns too many values for streamlit to handle
     # allow multiple entries with a commoa 
     actor_input = st.text_input('Type actor(s) names separated by commas. Select intended actor(s) from dropdown that appears')
     if actor_input != '':
-        # downcase input
-        actor_input = actor_input.lower()
-        # split into list 
-        actor_input = actor_input.split(', ')
-
-        # fuzzy string matching to find similarity ratio between user input and actual actors (downcased)
-        # works for misspellings as well 
-        # limit to 70% similarity 
-        options = []
-        actors_sim = actors_df.copy()
-        for i in actor_input:
-            actors_sim['sim'] = actors_sim.actors_downcased.apply(lambda row: fuzz.token_sort_ratio(row, i))
-            options.append(actors_sim[actors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                      ).head(3).actors_upcased.unique())
-        options = [item for sublist in options for item in sublist]    
-
-        # list actors that are similar to what they typed
+        
+        options = fuzzy_matching(actor_input, actors_df, 'actors')
+        
+        # list actors that are similar to what they typed and accept user selection(s)
         if len(options) > 0:
             actor_input = st.multiselect('Select Actor(s)', options)
         else:
@@ -157,23 +181,10 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
     director_input = st.text_input('Type director(s) names separated by commas. ' + 
                                    'Select intended director(s) from dropdown that appears')
     if director_input != '':
-        # downcase input
-        director_input = director_input.lower()
-        # split into list 
-        director_input = director_input.split(', ')
+        
+        options = fuzzy_matching(director_input, directors_df, 'directors')
 
-        # fuzzy string matching to find similarity ratio between user input and actual directors (downcased)
-        # works for misspellings as well 
-        # limit to 70% similarity 
-        options = []
-        directors_sim = directors_df.copy()
-        for i in director_input:
-            directors_sim['sim'] = directors_sim.directors_downcased.apply(lambda row: fuzz.token_sort_ratio(row, i))
-            options.append(directors_sim[directors_sim.sim > 70].sort_values('sim', ascending = False
-                                                                            ).head(3).directors_upcased.unique())
-        options = [item for sublist in options for item in sublist]    
-
-        # list directors that are similar to what they typed
+        # list directors that are similar to what they typed and accept user selection(s)
         if len(options) > 0:
             director_input = st.multiselect('Select Director(s)', options)
         else:
@@ -190,7 +201,7 @@ def write(df_display, genres_unique, actors_df, directors_df, countries_unique,
             df_filtered = df_display[(df_display.decade ==  decade_input)]
         else:
             df_filtered = df_display.copy()
-        # filter dataframe with rest of filters
+        # filter dataframe with rest of filters, sort and get top 10. Drop columns we don't want to display.
         df_filtered = df_filtered[(df_filtered.Genres.map(set(genre_input).issubset)) & 
                                  (df_filtered['Filming Countries'].map(set(country_input).issubset)) &
                                  (df_filtered['Language(s)'].map(set(language_input).issubset)) & 
