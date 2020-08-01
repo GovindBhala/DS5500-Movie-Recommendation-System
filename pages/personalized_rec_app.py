@@ -8,8 +8,7 @@
 # - Combine ratings data with any newly created profiles
 # - User enters ID
 # - Check if personalized recommendations available -> collaborative-content combination model
-#     - Personalization trained on a subset of users that have rated at least 20 models
-#     - Pre-computed so will not include user added profiles 
+#     - Pre-computed so will not include user added profiles in this session or prior sessions if retrain hasn't happened
 # - Otherwise check if valid ID (in ratings dataset) -> content combination model 
 # - Generate recommendations: full recommendation list from each model
 #     - Do not display recommenations if predicted will not like movie even if fit filter

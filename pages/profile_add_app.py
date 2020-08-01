@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # # Create New Profile
-# **Use Case:** new user without existing profile. Enter movies and ratings so that they can receieve personalized recommendations 
+# **Use Case:** new user without existing profile. Enter movies and ratings so that they can receieve personalized recommendations       
 # Details:
 # - Persistant across session: if come back to page later (without clearing cache), will be on the same profile
 #     - Cannot create a new profile in 1 session. Makes sense because proxying a login experience. 
@@ -14,8 +14,9 @@
 #     
 # Process:
 # - User free text input movie title
+#     - Too many to display as a dropdown. Streamlit crashes
 # - Look for movies in system with > 70% similarity. Display top 10
-# - User selects from dropdown
+# - User selects from dropdown (1 selection only possible)
 # - User input rating and hit submit
 # - If hit view profile & save without 2 distinct ratings (at least 2 movies with 2 different ratings), ask to enter more. 
 # - Otherwise, display what they've entered + concat to ratings dataframe and save 
@@ -59,22 +60,24 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
     # downcase input
     user_text = user_text.lower()
 
-    # if no entry:
+    # if no entry (initial state):
     if user_text == '':
         st.write('Waiting for input')
     # once enter text:
     else:
         # fuzzy string matching to find similarity ratio between user input and actual movie title (downcased)
-        # works for misspellings as well 
-        # limit to 70% similarity 
+            # works for misspellings as well 
+            # limit to 70% similarity 
         options = df.copy()
+        # find similarity ratio between input and all unique movies (downcased)
         options['sim'] = options.title_downcased.apply(lambda row: fuzz.ratio(row, user_text))
+        # get top 10 with similarity > 70%. Display full title with (year) in case multiple with same title
         options = options[options.sim > 70].sort_values('sim', ascending = False).head(10).title_year.unique()
         
         # find movies with titles similar to what they typed
         if len(options) > 0:
 
-            # user select out of possible options
+            # user select out of possible options. Accept one option only. 
             user_title = st.selectbox('Select Movie', ['<select>'] + list(options))
 
             # once input something, ask for rating
@@ -103,6 +106,7 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
     if st.button('View & Save Profile'):
         
         # if they've entered fewer than 2 distinct ratings, notify and do not save profile yet
+            # set such that looking for distinct ratings
         if len(set(new_ratings)) < 2:
             st.write("You haven't entered enough ratings! Please rate at least two movies with at least two different star values")
         else:
@@ -120,16 +124,18 @@ def write(df, new_ratings, new_users, new_movies, new_titles, userId_new, rating
             new_ratings = new_ratings.groupby(['userId', 'movieId']).rating.mean()  
             new_ratings = new_ratings.reset_index(drop = False)
 
-            # in case saved/viewed profile previously, delete instances of this ID before so don't create duplicates
+            # in case saved/viewed profile previously,
+            # delete instances of this ID in the saved dataset so don't create duplicates
             ratings = ratings[ratings.userId != userId_new[0]]
 
             # concat with original ratings
             ratings = pd.concat([ratings, new_ratings], sort = False)
             ratings = ratings.reset_index(drop = True)
 
-            # save 
+            # save. Alert user when done
             st.write('Saving your profile. Please wait...')
-            ratings.to_parquet('ratings_sample_useradd.parq', engine = 'fastparquet', compression = 'GZIP', index = False)
+            ratings.to_parquet('processed_files/ratings_sample_useradd_collab.parq',
+                               engine = 'fastparquet', compression = 'GZIP', index = False)
             st.write('Done!')
     
     # return so can be used in this current run
