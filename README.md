@@ -311,17 +311,17 @@ __Methodology__
 3. Fit  the model on the train dataset.
 4. Build test data set: create all the user-item combinations not present in the train dataset by using build_anti_testset() function.
 5. Predict ratings on the test dataset.
-6. Recommendation:
-        - create user_profile: filter all the user-item ratings based on the user_id from the predictions sorted by highly rated movies
-        - recommend top_n movies to the user
+6. Recommendation: 
+	- create user_profile: filter all the user-item ratings based on the user_id from the predictions sorted by highly rated movies
+	- recommend top_n movies to the user
         
 __Iterations & Performance__
 
 For the collaborative filtering we are using Surprise Library for recommendation system by python. All the memory based and model based collaborative filtering models were compared. 
 
 The top 5 models with least RMSE score:
- 		- Used 1000 users to compare all the models
-		- cross validation  = 5
+	- Used 1000 users to compare all the models
+	- cross validation  = 5
 
 | Algorithm | test_rmse | 
 | --- | ----------- | 
@@ -334,17 +334,11 @@ The top 5 models with least RMSE score:
 The top two models with least rmse were selected for Baseline model selection.
 
 1) SVDpp() : A model based recommendation system.
-			
-			- Evaluation_collaborative_filtering_model_svdpp.txt
-
-2) KNNBaselie() : A memory based recommendation system.
-		
-a) Using Mean Squared Difference similarity between all pairs of users (or items)
-		
+	- Evaluation_collaborative_filtering_model_svdpp.txt
+2) KNNBaseline() : A memory based recommendation system.	                               
+	- a) Using Mean Squared Difference similarity between all pairs of users (or items)
 		- collaborative_with_sim_msd.txt
-
-b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
-	        
+	- b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
 	        - collaborative_with_sim_pearson_baseline.txt 
 
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
@@ -385,7 +379,7 @@ Two sections:
 | Combined Text | 0.87 | 0.01 | 0.001 | 0.53 | 1.85 | 3.16
 
 (2) Combined content and collaborative filtering model
-- __KNN + Baseline__: Combining best collaborative filtering and best content based model (see conclusions section for why Baseline was selected)
+- __KNN + Baseline__: Combining best collaborative filtering and best content based model (see conclusions section for why baseline was selected for content model)
      - collab_content_combine_5000users.txt
 
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
