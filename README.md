@@ -84,11 +84,12 @@ Cons:
 __Collaborative Filtering Models__: recommend movies that were rated highly by users that have a similar rating history to the user                
 Pros:
   - Average rating: biased towards popular movies which means both frequently watched and highly rated movies
-  - Accurate recommendations: users are more likely to rate popular movies and collaborative filtering models are more likely to recommend popular movies. Thus more likely than content-based to get a match between recommended and test set.          
+  - Accurate recommendations: users are more likely to rate popular movies and collaborative filtering models are more likely to recommend popular movies. Thus more likely than content-based to get a match between recommended and test set.         
             
 Cons: 
   - Personalization: biased towards a smaller subset of popular movies, so hard to generate different recommendations for different users
   - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitly exclude movies with small numbers of ratings. 
+  - The model needs to be retrained periodically to reflect new users ratings. 
   
 Our __final personalized model__ uses a combination of collaborative filtering and content-based approaches. For movies with more than 50 ratings, we use a KNN user-user collaborative filtering method to find similar users. For all other movies, we use a content-based approach that finds similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and present a list of 10 movies sorted by the weighted average between the movie's number of ratings and average rating. We thus recommend movies that we are confident the user will like through collaborative filtering and movies in the long tail through content-based to achieve all of our goals. We sort on weighted average because we want to present the most popular movies first in order to gain the user's trust, and then present the less popular "long-tail" movies that they likely have not heard of in hopes of increasing our platform's overall number of streams.   
 
