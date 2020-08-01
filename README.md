@@ -305,9 +305,57 @@ __Best Content Model:__ Combined Text
 
 __Methodology__     
 
+1. Filtering movies with at least 50 ratings. 
+2. Build train dataset using users_ratings of 5000 users. Training the model on complete dataset was not feasible due to computational limitations.
+3. Fit  the model on the train dataset.
+4. Build test data set: create all the user-item combinations not present in the train dataset by using build_anti_testset() function.
+5. Predict ratings on the test dataset.
+6. Recommendation:
+        - create user_profile: filter all the user-item ratings based on the user_id from the predictions sorted by highly rated movies
+        - recommend top_n movies to the user
+        
 __Iterations & Performance__
 
+For the collaborative filtering we are using Surprise Library for recommendation system by python. All the memory based and model based collaborative filtering models were compared. 
+
+The top 5 models with least RMSE score:
+ 		- Used 1000 users to compare all the models
+		- cross validation  = 5
+
+| Algorithm | test_rmse | 
+| --- | ----------- | 
+| SVDpp | 0.8708| 
+| KNNBaseline | 0.8780 |
+| BaselineOnly | 0.8788 |
+| SVD | 0.870 | 0.8848 |  
+| KNNWithZScore | 0.8937 | 
+
+The top two models with least rmse were selected for Baseline model selection.
+
+1) SVDpp() : A model based recommendation system.
+			
+			- Evaluation_collaborative_filtering_model_svdpp.txt
+
+2) KNNBaselie() : A memory based recommendation system.
+		
+a) Using Mean Squared Difference similarity between all pairs of users (or items)
+		
+		- collaborative_with_sim_msd.txt
+
+b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
+	        
+	        - collaborative_with_sim_pearson_baseline.txt 
+
+| Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
+| --- | --- | --- | --- | --- | --- | --- 
+| SVDpp | 0.79 | 0.87 | 0.26 | 0.36 | 1495.15 | 4.07
+| KNNBaseline | 0.80 | 0.84 | 0.27 | 0.42 | 86.2 | 3.6
+| KNNBaseline with pearson_baseline | 0.96 | 0.81 | 0.29 | 0.41 | 110.1 | 3.53
+
 __Conclusions__       
+
+1) We selected KNNBaseline as our baseline model, the model overall performance in terms of evaluation metrics and execution time was way better than SVDpp(). 
+2) The baseline model was overfitting and was predicting good ratings for most of the test data. To overcome the overfitting problem, we used KNNBaseline with pearson_baseline similarity. The pearson baseline also considers baseline estimates of users and items when predicting ratings.
 
 ### 4. Combined Content and Collaborative Filtering Models
 
