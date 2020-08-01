@@ -339,7 +339,7 @@ The top two models with least rmse were selected for Baseline model selection.
 	- a) Using Mean Squared Difference similarity between all pairs of users (or items)
 		- collaborative_with_sim_msd.txt
 	- b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
-	        - collaborative_with_sim_pearson_baseline.txt 
+		- collaborative_with_sim_pearson_baseline.txt 
 
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
 | --- | --- | --- | --- | --- | --- | --- 
