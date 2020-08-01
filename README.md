@@ -320,8 +320,8 @@ __Iterations & Performance__
 For the collaborative filtering we are using Surprise Library for recommendation system by python. All the memory based and model based collaborative filtering models were compared. 
 
 The top 5 models with least RMSE score:
-	- Used 1000 users to compare all the models
-	- cross validation  = 5
+- Used 1000 users to compare all the models
+- cross validation  = 5
 
 | Algorithm | test_rmse | 
 | --- | ----------- | 
@@ -351,7 +351,9 @@ __Conclusions__
 
 1) We selected KNNBaseline as our baseline model, the model overall performance in terms of evaluation metrics and execution time was way better than SVDpp(). 
 2) The baseline model was overfitting and was predicting good ratings for most of the test data. To overcome the overfitting problem, we used KNNBaseline with pearson_baseline similarity. The pearson baseline also considers baseline estimates of users and items when predicting ratings.
-
+           
+__Best Collaborative Filtering Model:__ KNN Baseline with Pearson        
+                     
 ### 4. Combined Content and Collaborative Filtering Models
 
 __Methodology__        
