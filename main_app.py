@@ -71,7 +71,7 @@ import pages.EDA_Streamlit_page
 @st.cache(allow_output_mutation=True)
 def data_setup():
     # read in data created in recommendation_data_display.ipynb
-    df = pd.read_parquet('recommendation_display.parq')
+    df = pd.read_parquet('processed_files/recommendation_display.parq')
 
     # get unique lists of all filter values for user selections 
     genres_unique, actors_df, directors_df, countries_unique, language_unique, tags_unique, decades_unique, movies_unique = pages.non_user_recommendations.unique_lists(df)

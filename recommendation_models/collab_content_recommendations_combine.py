@@ -68,5 +68,5 @@ def collab_content_combine(user_id, df1, ratings, movieIds, movies_ratings, keep
     # resort based on weighted average: present popular movies first 
     recommendations = recommendations.sort_values('weighted_avg', ascending = False)
     
-    return recommendations[['movieId', 'prediction', 'cnt', 'Average_Ratings']]
+    return recommendations
 

@@ -49,32 +49,37 @@ def collab_recommendations(user_id, df1, ratings, movieIds, movies_ratings, keep
                            keep_movies2, content_recommedation_system = False, collab_recommendation_system = False,
                            top_n = 10, precision = False):
     
+    # generate recommendations on train/test set
     if precision: 
         test_ratings = df2.copy()
+        # set parameters for KNN model
         user_based = {'name': 'pearson_baseline',
                'shrinkage': 0  # no shrinkage
                }
         collab_ratings = ratings[['userId','movieId','rating']]
+        # set scale between min and max rating 
         min_rat = collab_ratings.rating.min()
         max_rat = collab_ratings.rating.max()
         reader = Reader(rating_scale=(min_rat,max_rat))
+        # fit on train set
         data = Dataset.load_from_df(collab_ratings, reader)
         trainset = data.build_full_trainset()
         algo = KNNBaseline(sim_options=user_based)
         algo.fit(trainset)
 
+        # predict on test set
         test_ratings = test_ratings[['userId','movieId','rating']]
         testset = [tuple(x) for x in test_ratings.to_numpy()]
-
         predictions = algo.test(testset)
+        
+        # return predictions on test set 
         collab_predictions = pd.DataFrame(predictions)
         collab_predictions=collab_predictions[['uid','iid','est']]
-        
         collab_predictions= collab_predictions.rename(columns = {'est':'prediction', 'uid':'userId', 'iid':'movieId'}
                                                      )[['userId','movieId','prediction']]
-        
         collab_predictions[['userId','movieId']] = collab_predictions[['userId','movieId']].astype(int)
         
+    # use precomputed
     else:
         collab_predictions = df2.copy()
 
@@ -84,5 +89,5 @@ def collab_recommendations(user_id, df1, ratings, movieIds, movies_ratings, keep
     collab_rec = pd.merge(collab_rec, movies_ratings, on = 'movieId')
     collab_rec = collab_rec.sort_values(['prediction', 'weighted_avg'], ascending = [False, True])
     
-    return collab_rec[['movieId', 'prediction', 'Average_Ratings', 'cnt']]
+    return collab_rec
 

@@ -63,7 +63,8 @@ from recommendation_models.collab_recommendations import collab_recommendations
 # - Load corresponding columns and movieIds (row) for sparse matrices. Don't need columns and movieIds are identical in the two datasets, so load just for df1
 #     - All movie ids in both datasets because want to generate user profile based on all movies they have rated. Then filter recommendations down to the target group
 # - Precomputed collaborative filtering predictions from a subset of users
-# - Load in ratings data. Version with user profiles added on from prior runs of app
+# - Load in ratings data. Version that is limited to users with collaborative filtering recommendations + with user profiles added on from prior runs of app 
+#     - If retraining hasn't occurred yet, can still use prior entered user profiles to get content based personalized recommendations
 # - Load lists of movieIds with and without tags. Will generate recommendations from tagged movies with df2 and untagged movies with df1
 
 # In[22]:
@@ -74,27 +75,27 @@ def load_data():
       
     # sparse movie dataframe with attached metadata (column titles, movieIds in row order)
     # two datasets for combined models 
-    df1 = scipy.sparse.load_npz("processed_df_sparse.npz")
-    df2 = scipy.sparse.load_npz("processed_df_text_sparse.npz")
+    df1 = scipy.sparse.load_npz("processed_files/processed_df_sparse.npz")
+    df2 = scipy.sparse.load_npz("processed_files/processed_df_text_sparse.npz")
     
-    with open('sparse_metadata', "rb") as f:
+    with open('processed_files/sparse_metadata', "rb") as f:
         cols1 = pickle.load(f)
         movieIds = pickle.load(f)
 
     # precomputed collaborative filtering predictions
-    collab_predictions = pd.read_parquet('Predictions/KNN_predictions_df.parq')
+    collab_predictions = pd.read_parquet('processed_files/Predictions_5000/KNN_predictions_df.parq')
     # rename columns to be consistent 
     collab_predictions = collab_predictions.rename(columns = {'est':'prediction', 'uid':'userId', 'iid':'movieId'})
     collab_predictions = collab_predictions.drop(columns = ['r_ui', 'details.actual_k', 'details.was_impossible'])
         
-    # version of ratings that has manually entered user profiles added on 
-    ratings = pd.read_parquet('ratings_sample_useradd.parq')
+    # version of ratings that is limited to collab users + has manually entered user profiles added on 
+    ratings = pd.read_parquet('processed_files/ratings_sample_useradd_collab.parq')
     ratings = ratings.reset_index(drop = True)
     
     # load movieId lists for movies with and without tags so can specify which movies to keep for which models
-    with open('movieIds_tags', "rb") as f:
+    with open('processed_files/movieIds_tags', "rb") as f:
         movieIds_tags = pickle.load(f)
-    with open('movieIds_notags', "rb") as f:
+    with open('processed_files/movieIds_notags', "rb") as f:
         movieIds_notags = pickle.load(f)
         
     return ratings, movieIds, df1, df2, collab_predictions, movieIds_tags, movieIds_notags

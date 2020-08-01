@@ -33,7 +33,7 @@ Dataset (Kaggle): https://www.kaggle.com/stefanoleone992/imdb-extensive-dataset
 
 We merge these two datasets on each movie's IDMB ID, which is provided in both datasets. We drop about 17,000 movies in this merge as the IMDB set does not include all of the movies in the MovieLens set. 
  
-As described in the modeling section, some of our models are content-based and thus depend on this movie metadata. We ultimately one-hot-encode all of the features used to build the models, but first perfrom the following feature engineering.
+As described in the modeling section, some of our models are content-based and thus depend on this movie metadata. We ultimately one-hot-encode all of the features used to build the models, but first preform the following feature engineering.
 - Both MovieLens and IMDB include, sometimes non-matching, genre lists. We take the union of both lists for each movie. 
 - Limit the actors lists to the 3 top actors in each movie. We cannot reasonably one-hot-encode all actors for all movies due to memory and performance limitations. Additionally, minor actors likely do not affect a user's movie preference. 
   - Top actors are determined by the number of movies in the catalog they have appeared in 
@@ -48,7 +48,7 @@ It consists of 5 pages:
  - Subset of visualizations created in exploratory data analysis that would be informative to a user understanding how to choose a good movie to watch
  - Use the checkboxes to view/close each visualization
 2. __Top Rated Movies__: Apply filters to find the top rated movies with your desired attributes
- - Provide recommenations to non-users. Simple user inputs and filtering, no underpinned model
+ - Provide recommendations to non-users. Simple user inputs and filtering, no underpinned model
  - Movies are sorted on the weighted average between their average rating and total number of ratings. If we sort on average rating only, there are many movies that are sorted only a few times and thus have unrealistically high average ratings 
 3. __Movie Based Recommendations__: Enter a movie that you have previously enjoyed to view similar movies
  - Item-Item recommendation model. Find movies similar to the inputted movie based on its content profile
@@ -58,6 +58,8 @@ It consists of 5 pages:
 5. __Add Profile__: If you are not in our system, create a new profile to enable personalized recommendations
  - Generates a unique user ID
  - User can enter movies and ratings to generate a new profile that can then be entered into the Personalized Recommendations tab
+ - Profiles can be expanded during the session
+ - Profiles are saved such that they can be accessed in subsequent sessions
 
 ## Models Overview
 
@@ -72,12 +74,12 @@ To achieve all of these goals, we use combinations of several models to produce 
               
 __Content-Based Models__: recommend movies with similar meta-data attributes to movies that the user had rated highly              
 Pros:
-  - Gobal diversity: no cold start problem - can recommend new and unpopular movies 
+  - Global diversity: no cold start problem - can recommend new and unpopular movies 
   - Personalization: recommendations are not biased towards a smaller subset of popular movies. Content models will recommend a wide variety of movies, thus increasingly the likelihood of generating different recommendations for different users    
               
 Cons:
   - Personal diversity: over-specialization when defining a user's profile such that they are recommended a narrow set of very similar movies
-  - Accurate rating: it is very difficult to achieve good precision and recall because we are generating predictions for all of the ~45,000 movies in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad.            
+  - Accurate rating: it is very difficult to achieve good precision and recall because we are generating predictions for all of the ~45,000 movies in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad.             
              
 __Collaborative Filtering Models__: recommend movies that were rated highly by users that have a similar rating history to the user                
 Pros:
@@ -86,17 +88,17 @@ Pros:
             
 Cons: 
   - Personalization: biased towards a smaller subset of popular movies, so hard to generate different recommendations for different users
-  - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitely exclude movies with small numbers of ratings. 
+  - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitly exclude movies with small numbers of ratings. 
   
 Our __final personalized model__ uses a combination of collaborative filtering and content-based approaches. For movies with more than 50 ratings, we use a KNN user-user collaborative filtering method to find similar users. For all other movies, we use a content-based approach that finds similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and present a list of 10 movies sorted by the weighted average between the movie's number of ratings and average rating. We thus recommend movies that we are confident the user will like through collaborative filtering and movies in the long tail through content-based to achieve all of our goals. We sort on weighted average because we want to present the most popular movies first in order to gain the user's trust, and then present the less popular "long-tail" movies that they likely have not heard of in hopes of increasing our platform's overall number of streams.   
 
 Our app also provides movie based recommendations where the user inputs a movie and we recommend similar movies. The __final item-item model__ uses a purely content-based approach because we do not have user rating data in this instance. The final content model is a combination of two content profiles. For movies with genome tags, we find similar movies based on their top 5 TF-IDF tokens from a combined text field of genome tags plus movie description. For movies without genome tags, we find similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and, again, present a list of 10 movies sorted by the rating weighted average. Movies with tags are generally more popular with more ratings than movies without tags. The recommendations based on tags have better precision and recall than recommendations based on genre, actors, and directors, but they fail to reach the long tail. Thus, similar to the personalized model, we present a mix of confident recommendations and long-tail recommendations.
 
 There are several caveats to these two final models in how they are used in the Streamlit app: 
-1. If a user enters a new profile in the app during a session, we use the content-only based approach that we use for item-item. The collaborative filtering model is precomputed and requires training to generate recommendations. The content model meanwhile generates recommendations on demand. The new profile is saved and will be included in periodic collaborative retraining such that those recommendations would be available in the future. 
+1. If a user enters a new profile in the app during a session (or entered a profile in a prior session but hasn't been part of a retrain yet), we use the content-only based approach that we use for item-item. The collaborative filtering model is precomputed and requires training to generate recommendations. The content model meanwhile generates recommendations on demand. The new profile is saved and will be included in periodic collaborative retraining such that those recommendations would be available in the future. 
 2. If the movie entered on the 'Movie Based Recommendations' page does not have any genome tags, our recommendations will only be based on genres, actors, and directors. We cannot use tags to recommend if the reference movie does not have tags. 
 3. While collaborative filtering is designed to produce predictions for movies with more than 50 ratings, we were unable to train this model on our full user base due to processing limitations and thus not all movies with more than 50 ratings are given predictions. Instead, only movies with more than 50 ratings that have been viewed by at least one of the 5000 users that we trained collaborative filtering on are included. Thus we actually use the content-based model for all movies that are not in the collaborative filtering set, some of which have more than 50 ratings. 
-    - The Streamlit app only includes these 5000 users in its pre-loaded set of users for personalized model
+    - The Streamlit app only includes these 5000 users in its pre-loaded set of users for personalized model. Plus it includes users who manually entered profiles in prior runs of the app but have not been part of a retrain yet where we generate collaborative recommendations for them. They can still get personalized content based recommendations. 
 
 
 __Summary of the Model Flow__    
@@ -127,9 +129,9 @@ Folders:
 Scripts (ipynb):
 - Collaborative_Filtering_Recommendation_Model: train collaborative filtering model(s) 
 - EvaluationFunction: evaluate recommendation model iterations with 5 metrics previously described
-- main_app: main streamlit UI function that calls in funcitons in pages folder for individual pages
+- main_app: main streamlit UI function that calls in functions in pages folder for individual pages
 - recommendation data exploration: pre-processing and feature engineering of raw movie and ratings data
-- recommendation_data_display: prepare movie data for display on streamlit UI
+- recommendation_data_display: prepare movie data for display on streamlit UI. Also limit ratings data to users with collaborative filtering recommendations for use in the app. 
 - movies_EDA: exploratory analysis of movies and rating data. Creates visualizations shown on Top Movie Visualizations page of UI 
 
 # Methodological Appendix
@@ -238,7 +240,7 @@ __Iterations & Performance__
      - Using genome tags provides a performance boost, but causes severe degradation in global diversity. This is because ~75% of movies don't have tags and tagged movies are heavily biased towards "popular" movies with many ratings. 
      - Thus we combined tags with other metadata to increase coverage. We tried both baseline features (genres, actors, directors) and TFIDF based on a combined tags and description text field. Neither of these models significantly improved in global diversity. However, the TFIDF text model does perform best for precision and average rating, although its personal diversity score is lower than some other text based models. 
 
-__Conclusion/Next Steps__: using genome tags significnatly improves performance but results in poor global diversity. Thus try using two separate models: one for movies with tags and one for movies without tags. Combine recommendations from each model such that we provide both recommendations we are confident in that are recongizable movies and recommendations in the long tail that may increase overall streaming. 
+__Conclusion/Next Steps__: using genome tags significantly improves performance but results in poor global diversity. Thus try using two separate models: one for movies with tags and one for movies without tags. Combine recommendations from each model such that we provide both recommendations we are confident in that are recognizable movies and recommendations in the long tail that may increase overall streaming. 
     - Tags are likely powerful because they capture the most important information from other meta-data. They include information like actors, genres, and plot themes.
     
 ### 2. Combined Content-Based Models
@@ -265,7 +267,7 @@ For movies without tags, definitely using baseline model (genre, actors, directo
     - content_tags_only_eval.txt
 - __TFIDF Text Tags Only__:  top 5 tags+description fields by TFIDF ONLY with movies that have tags
     - content_text_tagsonly_eval.txt
-- __Baseline no tags__: basline model (genre, actor, director) ONLY for movies without tags 
+- __Baseline no tags__: baseline model (genre, actor, director) ONLY for movies without tags 
      - content_baseline_notags_eval.txt
      
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
