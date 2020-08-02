@@ -1,11 +1,18 @@
 # DS5500-Movie-Recommendation-System
 
- - [Data](#data)
- - [UI Overview](#ui-overview)
- - [Models Overview](#models-overview)
- - [Repo Structure](#repo-structure)
+  * [Data](#data)
+  * [UI Overview](#ui-overview)
+  * [Models Overview](#models-overview)
+    + [Evaluation Metrics](#evaluation-metrics)
+    + [Content-Based Models](#content-based-models)
+    + [Collaborative Filtering Models](#collaborative-filtering-models)
+    + [Final Models](#final-models)
+    + [Re-training](#re-training)
+    + [Summary of the Model Flow](#summary-of-the-model-flow)
+  * [Repo Structure](#repo-structure)
+  * [Project Learnings](#project-learnings)
 - [Methodological Appendix](#methodological-appendix)
-  * [Evaluation Metrics](#evaluation-metrics)
+  * [Evaluation Metrics](#evaluation-metrics-1)
     + [Personalization](#personalization)
     + [Precision, Recall @ K](#precision-recall--k)
     + [Personal Diversity](#personal-diversity)
@@ -63,7 +70,8 @@ It consists of 5 pages:
 
 ## Models Overview
 
-The __Evaluation Metrics__ used to select our final models are discussed in depth in the Methodological Appendix. At a high level, we want recommendations with the following attributes:
+### Evaluation Metrics
+These metrics are discussed in depth in the Methodological Appendix. At a high level, we want recommendations with the following attributes:
 - Personalized recommendations: provide materially different sets of recommendations for different users
 - Accurate recommendations: high precision and recall based on test/train split of user ratings
 - Personal diversity: provide variety of recommendations to each individual user
@@ -71,8 +79,9 @@ The __Evaluation Metrics__ used to select our final models are discussed in dept
 - Global diversity: recommend movies in the long tail. Do not only recommend popular movies because this will not increase overall viewership, engagement with the streaming platform 
 
 To achieve all of these goals, we use combinations of several models to produce recommendations. At the highest level, there is a trade-off between content based models and collaborative filtering models.          
-              
-__Content-Based Models__: recommend movies with similar meta-data attributes to movies that the user had rated highly              
+             
+### Content-Based Models
+Recommend movies with similar meta-data attributes to movies that the user had rated highly              
 Pros:
   - Global diversity: no cold start problem - can recommend new and unpopular movies 
   - Personalization: recommendations are not biased towards a smaller subset of popular movies. Content models will recommend a wide variety of movies, thus increasingly the likelihood of generating different recommendations for different users    
@@ -81,7 +90,8 @@ Cons:
   - Personal diversity: over-specialization when defining a user's profile such that they are recommended a narrow set of very similar movies
   - Accurate rating: it is very difficult to achieve good precision and recall because we are generating predictions for all of the ~45,000 movies in the catalog and then recommending 10. Unlikely that the user has rated those 10 movies in the test set. Does not mean the recommendations are bad.             
              
-__Collaborative Filtering Models__: recommend movies that were rated highly by users that have a similar rating history to the user                
+### Collaborative Filtering Models
+Recommend movies that were rated highly by users that have a similar rating history to the user                
 Pros:
   - Average rating: biased towards popular movies which means both frequently watched and highly rated movies
   - Accurate recommendations: users are more likely to rate popular movies and collaborative filtering models are more likely to recommend popular movies. Thus more likely than content-based to get a match between recommended and test set.         
@@ -91,6 +101,7 @@ Cons:
   - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitly exclude movies with small numbers of ratings. 
   - The model needs to be retrained periodically to reflect new users ratings. 
   
+### Final Models
 Our __final personalized model__ uses a combination of collaborative filtering and content-based approaches. For movies with more than 50 ratings, we use a KNN user-user collaborative filtering method to find similar users. For all other movies, we use a content-based approach that finds similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and present a list of 10 movies sorted by the weighted average between the movie's number of ratings and average rating. We thus recommend movies that we are confident the user will like through collaborative filtering and movies in the long tail through content-based to achieve all of our goals. We sort on weighted average because we want to present the most popular movies first in order to gain the user's trust, and then present the less popular "long-tail" movies that they likely have not heard of in hopes of increasing our platform's overall number of streams.   
 
 Our app also provides movie based recommendations where the user inputs a movie and we recommend similar movies. The __final item-item model__ uses a purely content-based approach because we do not have user rating data in this instance. The final content model is a combination of two content profiles. For movies with genome tags, we find similar movies based on their top 5 TF-IDF tokens from a combined text field of genome tags plus movie description. For movies without genome tags, we find similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and, again, present a list of 10 movies sorted by the rating weighted average. Movies with tags are generally more popular with more ratings than movies without tags. The recommendations based on tags have better precision and recall than recommendations based on genre, actors, and directors, but they fail to reach the long tail. Thus, similar to the personalized model, we present a mix of confident recommendations and long-tail recommendations.
@@ -101,8 +112,12 @@ There are several caveats to these two final models in how they are used in the 
 3. While collaborative filtering is designed to produce predictions for movies with more than 50 ratings, we were unable to train this model on our full user base due to processing limitations and thus not all movies with more than 50 ratings are given predictions. Instead, only movies with more than 50 ratings that have been viewed by at least one of the 5000 users that we trained collaborative filtering on are included. Thus we actually use the content-based model for all movies that are not in the collaborative filtering set, some of which have more than 50 ratings. 
     - The Streamlit app only includes these 5000 users in its pre-loaded set of users for personalized model. Plus it includes users who manually entered profiles in prior runs of the app but have not been part of a retrain yet where we generate collaborative recommendations for them. They can still get personalized content based recommendations. 
 
+### Re-training
+- Retrain collaborative filtering periodically to incorporate new ratings, movies, and users. This includes getting recommendations for the new manually added profiles
+- Content-based models do not require retraining because they generate recommendations on demand. The only requirement is that the source data is updated to include new movies, ratings, and users. 
+- For use in production, should define thresholds for the various evaluation metrics to evaluate and prevent model drift.
 
-__Summary of the Model Flow__    
+### Summary of the Model Flow
 These flow diagrams represent the two model based pages in the UI.
 
 ![picture](images/model_flow.png)
@@ -134,6 +149,11 @@ Scripts (ipynb):
 - recommendation data exploration: pre-processing and feature engineering of raw movie and ratings data
 - recommendation_data_display: prepare movie data for display on streamlit UI. Also limit ratings data to users with collaborative filtering recommendations for use in the app. 
 - movies_EDA: exploratory analysis of movies and rating data. Creates visualizations shown on Top Movie Visualizations page of UI 
+
+## Project Learnings
+- We initially expected to build one personalized model, but found that ensembles can help optimize for competing trade-offs. Thus we were able to optimize both global diversity and precision, recall. 
+- We initially imagined a simpler UI with two pages: Top Rated Movies and Personalized Recommendations. But we thought about the different use cases and decided to also build a Movie Based Recommender to give users without ratings some sense of personalized recommendations. We also expanded our design to allow users to manually enter profiles. 
+- To build the UI, we learned about Streamlit in python to create a multi-page application and learned how to host the application with AWS EC2.
 
 # Methodological Appendix
 
@@ -311,17 +331,17 @@ __Methodology__
 3. Fit  the model on the train dataset.
 4. Build test data set: create all the user-item combinations not present in the train dataset by using build_anti_testset() function.
 5. Predict ratings on the test dataset.
-6. Recommendation:
-        - create user_profile: filter all the user-item ratings based on the user_id from the predictions sorted by highly rated movies
-        - recommend top_n movies to the user
+6. Recommendation: 
+	- create user_profile: filter all the user-item ratings based on the user_id from the predictions sorted by highly rated movies
+	- recommend top_n movies to the user
         
 __Iterations & Performance__
 
 For the collaborative filtering we are using Surprise Library for recommendation system by python. All the memory based and model based collaborative filtering models were compared. 
 
 The top 5 models with least RMSE score:
- 		- Used 1000 users to compare all the models
-		- cross validation  = 5
+- Used 1000 users to compare all the models
+- cross validation  = 5
 
 | Algorithm | test_rmse | 
 | --- | ----------- | 
@@ -334,18 +354,12 @@ The top 5 models with least RMSE score:
 The top two models with least rmse were selected for Baseline model selection.
 
 1) SVDpp() : A model based recommendation system.
-			
-			- Evaluation_collaborative_filtering_model_svdpp.txt
-
-2) KNNBaselie() : A memory based recommendation system.
-		
-a) Using Mean Squared Difference similarity between all pairs of users (or items)
-		
+	- Evaluation_collaborative_filtering_model_svdpp.txt
+2) KNNBaseline() : A memory based recommendation system.	                               
+	- a) Using Mean Squared Difference similarity between all pairs of users (or items)
 		- collaborative_with_sim_msd.txt
-
-b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
-	        
-	        - collaborative_with_sim_pearson_baseline.txt 
+	- b) Using Pearson correlation coefficient between all pairs of users (or items) using baselines for centering instead of means. Large users and items effects systematic tendencies for some users to give higher ratings than others—and for some items to receive higher ratings than others. It is customary to adjust the data by accounting for these effects, which are encapsulate within the baseline estimates.   A baseline estimate for an unknown rating rui is denoted by bui and accounts for the user and item effects. The  parameters bu and bi indicate the observed deviations of user u and item i, respectively, from the average. 
+		- collaborative_with_sim_pearson_baseline.txt 
 
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
 | --- | --- | --- | --- | --- | --- | --- 
@@ -357,7 +371,9 @@ __Conclusions__
 
 1) We selected KNNBaseline as our baseline model, the model overall performance in terms of evaluation metrics and execution time was way better than SVDpp(). 
 2) The baseline model was overfitting and was predicting good ratings for most of the test data. To overcome the overfitting problem, we used KNNBaseline with pearson_baseline similarity. The pearson baseline also considers baseline estimates of users and items when predicting ratings.
-
+           
+__Best Collaborative Filtering Model:__ KNN Baseline with Pearson        
+                     
 ### 4. Combined Content and Collaborative Filtering Models
 
 __Methodology__        
@@ -385,7 +401,7 @@ Two sections:
 | Combined Text | 0.87 | 0.01 | 0.001 | 0.53 | 1.85 | 3.16
 
 (2) Combined content and collaborative filtering model
-- __KNN + Baseline__: Combining best collaborative filtering and best content based model (see conclusions section for why Baseline was selected)
+- __KNN + Baseline__: Combining best collaborative filtering and best content based model (see conclusions section for why baseline was selected for content model)
      - collab_content_combine_5000users.txt
 
 | Model | Personalization | Precision@10 | Recall@10 | Personal diversity | Global diversity | Average rating
