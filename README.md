@@ -150,6 +150,9 @@ Scripts (ipynb):
 - recommendation_data_display: prepare movie data for display on streamlit UI. Also limit ratings data to users with collaborative filtering recommendations for use in the app. 
 - movies_EDA: exploratory analysis of movies and rating data. Creates visualizations shown on Top Movie Visualizations page of UI 
 
+Requirements:
+- requirements.txt: all required packages and versions to run project
+
 ## Project Learnings
 - We initially expected to build one personalized model, but found that ensembles can help optimize for competing trade-offs. Thus we were able to optimize both global diversity and precision, recall. 
 - We initially imagined a simpler UI with two pages: Top Rated Movies and Personalized Recommendations. But we thought about the different use cases and decided to also build a Movie Based Recommender to give users without ratings some sense of personalized recommendations. We also expanded our design to allow users to manually enter profiles. 
