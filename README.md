@@ -327,6 +327,29 @@ __Best Content Model:__ Combined Text
 
 ### 3. Collaborative Filtering Models
 
+Collaborative filtering is a type of recommendation system that uses both user and item data. Here items are recommended based on the ratings from other users.
+There are two types of collaborative recommendation system:
+
+1) Memory based: which calculates the similarity between users/items ratings pairs. 
+	- Example: Nearest Neighbor approach
+
+2) Model Based: which uses the approach of reducing the dimension of the user-item matrix.
+ 	- Example: SVD
+
+SVDpp():
+In the context of the recommender system, SVD is used as a collaborative filtering technique. It uses a matrix structure where each row represents a user, and each column represents an item. The elements of this matrix are the ratings that are given to items by users.
+It involves factorizing a sparse matrix and finding two latent factor matrices: the first is the user matrix to indicate the user’s features (i.e., the degree of preference of a user for each factor) and the other is the item matrix, which indicates the item’s features (i.e., the weight of an item for each factor). The missing ratings are then predicted from the inner product of these two factor matrices. The SVD++  is a model that achieves better accuracy by adding implicit feedback such as movies that a user has evaluated, wish list, clickthrough rate and etc.
+
+KNNBaseline():
+It is a simple memory based collaborative filtering model where it finds similar users based on common ratings, and make predictions using the average rating of top-k nearest neighbors.
+
+Similarities with KNNBaseline():
+
+1) Mean Square Difference: It is the mean square difference between all pairs of the users. 
+
+2) Pearson Baseline: Computes the pearson coefficient between all pairs of users. Additional baseline estimates are taken in consideration when predicting ratings.
+An example of  baseline estimate for predicting the  rating of the movie A  by user 1. Now, let say the average rating over all movies, μ, is 3.7 stars. The movie A is better than an average movie, so it tends to be rated example 0.5 stars above the average. On the other hand, the user is a critical user and tends to rate 0.3 stars lower than the average. Thus, the predicted rating for  movie A  by user 1 would be 3.9 stars by calculating 3.7 − 0.3 + 0.5. This to an extent solves the overfitting issue.
+
 __Methodology__     
 
 1. Filtering movies with at least 50 ratings. 
