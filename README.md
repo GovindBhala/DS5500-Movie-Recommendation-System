@@ -167,11 +167,14 @@ We host our Streamlit app using AWS EC2. These instructions are specific to usin
 4. In the second step, select the t2.micro instance as again it is the one which is eligible for the free tier. As you can see t2.micro is just a single CPU instance with 1GB RAM.
 5. Keep pressing Next until you reach the “6. Configure Security Group” tab. You will need to add a rule with Type: “Custom TCP Rule”, Port Range:8501, and Source: Anywhere. We use the port 8501 here since it is the custom port used by Streamlit.
 6. You can click on “Review and Launch” and finally on the “Launch” button to launch the instance. Once you click on Launch you would need to create a new key pair and download that using the “Download Key Pair” button. Keep this key safe as it would be required every time you need to login or copy files onto this particular machine. Click on “Launch Instance” after downloading the key pair. Make sure you have the keypair stored as a ‘pem’ file. You might need to convert provided ppk to pem using following steps:
-	- $ brew install putty
-	- $ puttygen key.ppk -O private-openssh -o key.pem
+```
+$ brew install putty             
+$ puttygen key.ppk -O private-openssh -o key.pem
+```
 7. You can now go to your instances to see if your instance has started. Select your instance and copy the Public DNS(IPv4) Address from the description. It should be something starting with ec2.
 8. Once you have that run the following commands in the folder you saved the key.pem file or you can give the relative path below.:
-```chmod 400 key.pem
+```
+chmod 400 key.pem                      
 ssh -I “key.pem” ubuntu@<Your Public DNS(Ipv4) Address>
 ```
 9. Install miniconda, create new environment and activate the newly created environment:
