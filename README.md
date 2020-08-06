@@ -10,6 +10,7 @@
     + [Re-training](#re-training)
     + [Summary of the Model Flow](#summary-of-the-model-flow)
   * [Repo Structure](#repo-structure)
+  * [How To Host App in AWS](#how-to-host-app-in-aws)
   * [Project Learnings](#project-learnings)
 - [Methodological Appendix](#methodological-appendix)
   * [Evaluation Metrics](#evaluation-metrics-1)
@@ -155,6 +156,50 @@ Scripts (ipynb):
 
 Requirements:
 - requirements.txt: all required packages and versions to run project
+
+## How to Host App in AWS
+We host our Streamlit app using AWS EC2. These instructions are specific to using Free Tier AWS. 
+
+1. Sign up with your email ID and set up the payment information on the AWS website. Works just like a simple sign-on.
+2. Go to AWS Management Console using https://us-west-2.console.aws.amazon.com/console.
+3. In the first step, you need to choose the AMI template for the machine. I select the 18.04 Ubuntu Server since it is applicable for the Free Tier. And Ubuntu.
+4. In the second step, select the t2.micro instance as again it is the one which is eligible for the free tier. As you can see t2.micro is just a single CPU instance with 1GB RAM.
+5. Keep pressing Next until you reach the “6. Configure Security Group” tab. You will need to add a rule with Type: “Custom TCP Rule”, Port Range:8501, and Source: Anywhere. We use the port 8501 here since it is the custom port used by Streamlit.
+6. You can click on “Review and Launch” and finally on the “Launch” button to launch the instance. Once you click on Launch you would need to create a new key pair and download that using the “Download Key Pair” button. Keep this key safe as it would be required every time you need to login or copy files onto this particular machine. Click on “Launch Instance” after downloading the key pair. Make sure you have the keypair stored as a ‘pem’ file. You might need to convert provided ppk to pem using following steps:
+	- $ brew install putty
+	- $ puttygen key.ppk -O private-openssh -o key.pem
+7. You can now go to your instances to see if your instance has started. Select your instance and copy the Public DNS(IPv4) Address from the description. It should be something starting with ec2.
+8. Once you have that run the following commands in the folder you saved the key.pem file or you can give the relative path below.:
+```chmod 400 key.pem
+ssh -I “key.pem” ubuntu@<Your Public DNS(Ipv4) Address>
+```
+9. Install miniconda, create new environment and activate the newly created environment:
+```
+sudo apt-get update
+
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+
+bash ~/miniconda.sh -b -p ~/miniconda
+
+echo "PATH=$PATH:$HOME/miniconda/bin" >> ~/.bashrc
+
+source ~/.bashrc
+
+conda create --name myNewEnv python=3.5
+
+source activate myNewEnv
+```
+10. Move your code from your local to the EC2 instance- either using git or scp. If any of your files are greater than 100MB then you would need to use GIT LFS. LFS encoding and decoding was causing issues in our app so we ended up using scp:
+```
+scp -i key.pem -r /source/path ubuntu@<Your Public DNS(Ipv4) Address>:/destination/path
+```
+11. Execute in your environment:
+```pip install -r requirements.txt```
+
+12. Navigate to your app’s location and execute
+```streamlit run yourApp.py &```
+
+The above “&” is used so the process runs in the background and you can safely ‘exit’ from the instance and the app would continue to run.
 
 ## Project Learnings
 - We initially expected to build one personalized model, but found that ensembles can help optimize for competing trade-offs. Thus we were able to optimize both global diversity and precision, recall. 
