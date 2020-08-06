@@ -155,7 +155,8 @@ Scripts (ipynb):
 - movies_EDA: exploratory analysis of movies and rating data. Creates visualizations shown on Top Movie Visualizations page of UI 
 
 Requirements:
-- requirements.txt: all required packages and versions to run project
+- requirements.txt: all required packages and versions to run project including all analysis 
+- requirements-app.txt: all required packages and versions to run streamlit app
 
 ## How to Host App in AWS
 We host our Streamlit app using AWS EC2. These instructions are specific to using Free Tier AWS. 
