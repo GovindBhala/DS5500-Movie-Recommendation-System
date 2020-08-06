@@ -102,7 +102,7 @@ Pros:
 Cons: 
   - Personalization: biased towards a smaller subset of popular movies, so hard to generate different recommendations for different users
   - Global diversity: biased towards popular movies that have been watched many times. Most implementations explicitly exclude movies with small numbers of ratings. 
-  - Need for retrainng: The model needs to be retrained periodically to reflect new users ratings. Cannot produce collaborative recommendations for newly inputted profiles. 
+  - Need for re-training: The model needs to be retrained periodically to reflect new users ratings. Cannot produce collaborative recommendations for newly inputted profiles. 
   
 ### Final Models
 Our __final personalized model__ uses a combination of collaborative filtering and content-based approaches. For movies with more than 50 ratings, we use a KNN user-user collaborative filtering method to find similar users. For all other movies, we use a content-based approach that finds similar movies based on their genres, actors, and directors. For the final recommendation list, we take the top 5 movies from each system and present a list of 10 movies sorted by the weighted average between the movie's number of ratings and average rating. We thus achieve all of our goals by both recommending movies that we are confident the user will like via collaborative filtering and movies in the long tail via content- based. We sort on weighted average because we want to present the most popular movies first in order to gain the user's trust, and then present the less popular "long-tail" movies that they likely have not heard of in hopes of increasing our platform's overall number of streams.   
@@ -446,5 +446,5 @@ __Conclusions__
 - The combined collaborative-content model performs far better than the best content model in terms of precision and recall, while still reaching the long tail effectively. It performs slightly worse in personalization, but user recommendations are still 90% different. Additionally, personal diversity is worse than some other models at 40%. This is counterintuitive to our assumption that content models perform worse for personal diversity due to over-specialization. Regardless, our UI provides a workaround for poor personal diversity by allowing users to provide filters to see different types of recommendations, so we are willing to make this trade-off in favor of precision and recall.
 
 __Best Overall Personalization Model:__ KNN + Baseline
-Recommendations for movies with fewer than 50 ratings: content based on genre, actors, directors            
-Recommendations for movies with more than 50 ratings: KNN Baseline with Pearson collaborative filtering   
+- Recommendations for movies with fewer than 50 ratings: content based on genre, actors, directors            
+- Recommendations for movies with more than 50 ratings: KNN Baseline with Pearson collaborative filtering   
