@@ -238,7 +238,7 @@ Iterate on which movie features to use to create the movie and user profiles.
 - __All meta-data__: genre, actor, director, decade, country, production company 
      - content_all_meta_eval.txt
 - Individual features: try each individual feature in "all meta-data"
-     - content_<<feature name>>_eval.txt
+     - content_(feature name)_eval.txt
 - Baseline + Production Company: (country and decade performed poorly individually, so try adding just production company to baseline)
      - content_baseline_plus_prod_eval.txt
 - __Description TFIDF__: top 5 TF-IDF tokens from movie description
@@ -354,11 +354,11 @@ __Methodology__
    
 We mainly consider two main collaborative filtering models (this decision is detailed in the next section). We thus describe the prediction methodology for each in more depth:    
          
-SVDpp():
+_SVDpp_:        
 In the context of the recommender system, SVD is used as a collaborative filtering technique. It uses a matrix structure where each row represents a user and each column represents an item. The elements of this matrix are the ratings that are given to items by users.
 It involves factorizing a sparse matrix and finding two latent factor matrices: the first is the user matrix to indicate the user’s features (i.e., the degree of preference of a user for each factor) and the other is the item matrix, which indicates the item’s features (i.e., the weight of an item for each factor). The missing ratings are then predicted from the inner product of these two factor matrices. SVD++  is a model that achieves better accuracy by adding implicit feedback such as movies that a user has evaluated, wish list, clickthrough rate etc.
 
-KNNBaseline():
+_KNNBaseline_:               
 This is a simple memory based collaborative filtering model where it finds similar users based on common ratings, and make predictions using the average rating of top-k nearest neighbors.
 
 Similarity calculation methods with KNNBaseline():
@@ -446,3 +446,5 @@ __Conclusions__
 - The combined collaborative-content model performs far better than the best content model in terms of precision and recall, while still reaching the long tail effectively. It performs slightly worse in personalization, but user recommendations are still 90% different. Additionally, personal diversity is worse than some other models at 40%. This is counterintuitive to our assumption that content models perform worse for personal diversity due to over-specialization. Regardless, our UI provides a workaround for poor personal diversity by allowing users to provide filters to see different types of recommendations, so we are willing to make this trade-off in favor of precision and recall.
 
 __Best Overall Personalization Model:__ KNN + Baseline
+Recommendations for movies with fewer than 50 ratings: content based on genre, actors, directors            
+Recommendations for movies with more than 50 ratings: KNN Baseline with Pearson collaborative filtering   
